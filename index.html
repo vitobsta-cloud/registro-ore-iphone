@@ -1,0 +1,2757 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="App per gestire il registro di lavoro, trasferte, assenze e busta paga">
+<meta name="theme-color" content="#1a1a18">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RegLavoro">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="apple-touch-icon" href="logo.svg">
+<title>Registro Lavoro</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#eceff1;color:#1a1a18;min-height:100vh;padding-bottom:50px;}
+.credits{position:fixed;bottom:12px;right:16px;font-size:11px;color:#90a4ae;font-family:monospace;z-index:1000;background:rgba(236,239,241,0.85);padding:4px 10px;border-radius:20px;backdrop-filter:blur(4px);}
+.hdr{background:#1a1a18;color:#f5f4f0;padding:16px 20px;display:flex;align-items:center;gap:12px;}
+.hdr-back{background:rgba(255,255,255,0.12);border:none;color:#f5f4f0;font-size:15px;font-weight:600;cursor:pointer;padding:8px 12px;line-height:1;display:none;border-radius:10px;transition:background .15s;align-items:center;gap:6px;}
+.hdr-back:active{background:rgba(255,255,255,0.25);}
+.hdr-back.show{display:flex;}
+.fab-back{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a18;color:#f5f4f0;border:none;border-radius:50px;padding:14px 28px;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;display:none;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,0.35);z-index:999;transition:background .15s;white-space:nowrap;}
+.fab-back:active{background:#333;}
+.fab-back.show{display:flex;}
+.hdr-title{font-size:17px;font-weight:600;flex:1;}
+.hdr-sub{font-size:12px;color:#888780;}
+.scr{display:none;max-width:640px;margin:0 auto;padding:28px 16px;}
+.scr.on{display:block;}
+
+/* HOME */
+.home-info{text-align:center;margin-bottom:36px;padding-top:4px;}
+.home-day{font-size:14px;color:#5f5e5a;margin-bottom:6px;}
+.home-sum{font-size:13px;color:#888780;line-height:1.8;}
+.home-sum b{color:#1a1a18;}
+.cards{display:flex;flex-direction:column;gap:12px;}
+.card{background:#fff;border:1px solid #d3d1c7;border-radius:14px;padding:20px 22px;display:flex;align-items:center;gap:16px;cursor:pointer;width:100%;font-family:inherit;text-align:left;transition:border-color .15s,background .15s;}
+.card:hover{border-color:#888;background:#fafaf8;}
+.card-ico{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.ico-g{background:#eaf3de;}.ico-b{background:#e6f1fb;}.ico-gr{background:#f1efe8;}.ico-n{background:#fce4d6;}.ico-p{background:#d4e6f1;}.ico-v{background:#ede6f5;}
+.card-lbl{flex:1;}
+.card-title{font-size:15px;font-weight:600;color:#1a1a18;margin-bottom:3px;}
+.card-desc{font-size:12px;color:#888780;}
+.card-arr{font-size:20px;color:#ccc;}
+
+/* PANEL */
+.panel{background:#fff;border:1px solid #d3d1c7;border-radius:12px;overflow:hidden;margin-bottom:18px;}
+.ph{padding:14px 18px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between;}
+.ph h2{font-size:14px;font-weight:600;}
+.pb{padding:18px;}
+
+/* FORM */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:13px;}
+.fg label{font-size:12px;color:#5f5e5a;font-weight:500;}
+.fg input,.fg select,.fg textarea{padding:10px 12px;border:1px solid #d3d1c7;border-radius:8px;font-size:14px;color:#1a1a18;background:#fff;outline:none;font-family:inherit;width:100%;transition:border-color .15s;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:#888;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.sec-lbl{font-size:11px;font-weight:600;color:#5f5e5a;text-transform:uppercase;letter-spacing:.5px;padding-bottom:8px;border-bottom:1px solid #eee;margin-bottom:10px;margin-top:14px;}
+
+/* TRASFERTE 2x2 */
+.trasf-title{font-size:11px;font-weight:600;color:#5f5e5a;text-transform:uppercase;letter-spacing:.5px;padding-bottom:8px;border-bottom:1px solid #eee;margin-bottom:12px;margin-top:14px;}
+.trasf-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.trasf-col-header{font-size:12px;font-weight:600;color:#1a1a18;margin-bottom:8px;}
+.trasf-row{display:flex;align-items:center;justify-content:space-between;border:1px solid #d3d1c7;border-radius:8px;padding:11px 14px;cursor:pointer;margin-bottom:8px;transition:all .15s;user-select:none;}
+.trasf-row:hover{border-color:#888;background:#f9f9f9;}
+.trasf-row .lbl{font-size:13px;color:#444;font-weight:500;}
+.trasf-row .chk{font-size:18px;color:#ccc;}
+.trasf-row.attiva{border-color:#1a1a18;background:#1a1a18;}
+.trasf-row.attiva .lbl{color:#fff;}
+.trasf-row.attiva .chk{color:#fff;}
+
+/* NOTE SPESA */
+.note-spesa-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+
+/* ASSENZE */
+.assenze-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;margin-top:8px;}
+.assenza-card{background:#f9f9f9;border:1px solid #e0e0e0;border-radius:10px;padding:12px;}
+.assenza-card .assenza-title{font-size:12px;font-weight:600;color:#5f5e5a;margin-bottom:8px;}
+.assenza-card label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:500;}
+.assenza-card input[type="checkbox"]{width:18px;height:18px;cursor:pointer;}
+.permessi-row{display:flex;align-items:center;gap:12px;background:#f9f9f9;border:1px solid #e0e0e0;border-radius:10px;padding:12px;margin-bottom:13px;}
+.permessi-row .plbl{font-size:14px;font-weight:500;flex:1;}
+.permessi-row input{width:90px;padding:8px;border:1px solid #d3d1c7;border-radius:8px;font-size:14px;}
+
+/* PREVIEW */
+.preview{background:#f1efe8;border-radius:8px;padding:10px 14px;font-size:13px;color:#5f5e5a;margin-top:0;margin-bottom:13px;display:none;}
+
+/* BUTTONS */
+.btn{padding:10px 20px;border-radius:8px;border:1px solid #d3d1c7;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;background:#fff;color:#1a1a18;transition:all .15s;}
+.btn:hover{background:#f5f4f0;}
+.btn-p{background:#1a1a18;color:#f5f4f0;border-color:#1a1a18;}
+.btn-p:hover{background:#333;}
+.btn-d{color:#a32d2d;border-color:#f09595;}
+.btn-d:hover{background:#fcebeb;}
+.btn-s{padding:7px 14px;font-size:12px;}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px;margin-bottom:18px;}
+.stat{background:#fff;border:1px solid #d3d1c7;border-radius:10px;padding:12px 14px;}
+.stat-l{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;}
+.stat-v{font-size:20px;font-weight:600;}
+.stat-s{font-size:12px;color:#888;margin-top:2px;}
+
+/* SUBNAV / FILTERS */
+.subnav{display:flex;gap:8px;margin-bottom:16px;}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;}
+.filters .fg{flex:1;min-width:120px;margin-bottom:0;}
+
+/* TABLE */
+.twrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:#888;text-transform:uppercase;border-bottom:1px solid #eee;background:#f9f8f5;white-space:nowrap;}
+td{padding:9px 10px;border-bottom:1px solid #f0efeb;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#fafaf8;}
+
+/* BADGES */
+.bdg{display:inline-block;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:500;}
+.bdg-b{background:#e6f1fb;color:#185fa5;}
+.bdg-a{background:#faeeda;color:#854f0b;}
+.bdg-g{background:#eaf3de;color:#2d6a2d;}
+.bdg-m{background:#fce4d6;color:#b5441c;}
+.bdg-f{background:#d4e6f1;color:#1a5d8f;}
+.bdg-p{background:#f0e6f5;color:#6a2d8f;}
+
+/* SETTINGS */
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid #f0efeb;gap:12px;flex-wrap:wrap;}
+.set-row:last-child{border-bottom:none;}
+.set-info h3{font-size:14px;font-weight:500;margin-bottom:2px;}
+.set-info p{font-size:12px;color:#888;}
+.set-row input{width:140px!important;padding:8px 12px;border:1px solid #d3d1c7;border-radius:6px;font-size:14px;font-family:inherit;}
+
+/* RIEPILOGO / BUSTA */
+.res-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;font-size:14px;}
+.res-row:last-child{border-bottom:none;}
+.res-tot{font-size:15px;font-weight:700;margin-top:8px;}
+.busta-highlight{background:#d4e6f1;padding:14px 16px;border-radius:10px;margin-top:8px;}
+.busta-final{background:#1a1a18;color:#fff;padding:14px 16px;border-radius:10px;margin-top:8px;}
+.busta-final span{color:#fff!important;}
+
+/* IMPORT FILE */
+.import-file-area{border:2px dashed #d3d1c7;border-radius:10px;padding:20px;text-align:center;cursor:pointer;margin-bottom:12px;transition:border-color .15s;background:#fafaf8;}
+.import-file-area:hover{border-color:#888;}
+.import-file-area p{font-size:14px;color:#888;margin-bottom:8px;}
+.import-file-area strong{font-size:13px;color:#1a1a18;}
+#fileInput{display:none;}
+
+.empty{text-align:center;padding:36px;color:#bbb;font-size:14px;}
+.ico-t{background:#fde8d8;}.ico-err{background:#fdeaea;}
+.cliente-card{background:#fff;border:1px solid #d3d1c7;border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .15s;}
+.cliente-card:hover{border-color:#888;background:#fafaf8;}
+.cliente-card-name{font-size:15px;font-weight:600;margin-bottom:4px;}
+.cliente-card-stats{font-size:12px;color:#888780;display:flex;gap:14px;flex-wrap:wrap;}
+.mod-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f0efeb;font-size:13px;cursor:pointer;}
+.mod-row:hover{background:#fafaf8;}
+.mod-row:last-child{border-bottom:none;}
+.mod-row-date{font-weight:600;}
+.mod-row-info{font-size:12px;color:#888780;margin-top:2px;}
+.rie-row-clickable{cursor:pointer;}
+.rie-row-clickable:hover td{background:#f0f8ff;}
+.lock-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;}
+.lock-icon{font-size:48px;margin-bottom:16px;}
+.lock-title{font-size:18px;font-weight:600;margin-bottom:8px;color:#1a1a18;}
+.lock-desc{font-size:13px;color:#888780;margin-bottom:24px;}
+.pin-input{display:flex;gap:12px;justify-content:center;margin-bottom:20px;}
+.pin-input input{width:52px;height:60px;text-align:center;font-size:24px;font-weight:700;border:1.5px solid #d3d1c7;border-radius:10px;outline:none;background:#fff;color:#1a1a18;-webkit-text-security:disc;}
+.pin-input input:focus{border-color:#1a1a18;}
+.pin-error{color:#a32d2d;font-size:13px;min-height:18px;margin-bottom:12px;}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a18;color:#f5f4f0;padding:10px 22px;border-radius:10px;font-size:14px;display:none;z-index:9999;white-space:nowrap;}
+
+@media(max-width:450px){
+  .row2{grid-template-columns:1fr;}
+  .trasf-grid{grid-template-columns:1fr;}
+  .assenze-grid{grid-template-columns:1fr;}
+  .note-spesa-grid{grid-template-columns:1fr;}
+  .scr{padding:20px 12px;}
+}
+</style>
+</head>
+<body>
+
+<div class="credits">TR/software</div>
+
+<div class="hdr">
+  <button class="hdr-back" id="btnBack" onclick="goHome()">&#8592; Home</button>
+  <span class="hdr-title" id="hdrTitle">Registro Lavoro</span>
+  <span class="hdr-sub" id="hdrSub"></span>
+</div>
+
+<!-- ═══ HOME ═══ -->
+<div class="scr on" id="scrHome">
+  <div class="home-info">
+    <div class="home-day" id="homeDay"></div>
+    <div class="home-sum" id="homeSum"></div>
+  </div>
+  <div class="cards">
+    <button class="card" onclick="vai('inserisci')">
+      <div class="card-ico ico-g">✏️</div>
+      <div class="card-lbl"><div class="card-title">Inserisci</div><div class="card-desc">Aggiungi una nuova giornata lavorativa</div></div>
+      <span class="card-arr">›</span>
+    </button>
+    <button class="card" onclick="vai('visualizza')">
+      <div class="card-ico ico-b">📋</div>
+      <div class="card-lbl"><div class="card-title">Visualizza</div><div class="card-desc">Registro, riepilogo e statistiche</div></div>
+      <span class="card-arr">›</span>
+    </button>
+    <button class="card" onclick="vai('trasferte')">
+      <div class="card-ico ico-n">📊</div>
+      <div class="card-lbl"><div class="card-title">Riepilogo Trasferte</div><div class="card-desc">Calcolo rimborsi e spese</div></div>
+      <span class="card-arr">›</span>
+    </button>
+    <button class="card" onclick="vai('busta')">
+      <div class="card-ico ico-p">💰</div>
+      <div class="card-lbl"><div class="card-title">Busta Paga Preventiva</div><div class="card-desc">Stima stipendio mensile</div></div>
+      <span class="card-arr">›</span>
+    </button>
+    <button class="card" onclick="vai('grafici')">
+      <div class="card-ico ico-v">📈</div>
+      <div class="card-lbl"><div class="card-title">Grafici</div><div class="card-desc">Analisi visuale per periodo personalizzato</div></div>
+      <span class="card-arr">›</span>
+    </button>
+    <button class="card" onclick="vai('clienti')">
+      <div class="card-ico ico-t">🔍</div>
+      <div class="card-lbl"><div class="card-title">Ricerca Clienti</div><div class="card-desc">Storico interventi per cliente</div></div>
+      <span class="card-arr">›</span>
+    </button>
+    <button class="card" onclick="vai('codici')">
+      <div class="card-ico ico-err">⚠️</div>
+      <div class="card-lbl"><div class="card-title">Ricerca Codici Errore</div><div class="card-desc">Cerca interventi per codice (es. E1581)</div></div>
+      <span class="card-arr">›</span>
+    </button>
+    <button class="card" onclick="vai('impostazioni')">
+      <div class="card-ico ico-gr">⚙️</div>
+      <div class="card-lbl"><div class="card-title">Impostazioni</div><div class="card-desc">Parametri, importa ed esporta dati</div></div>
+      <span class="card-arr">›</span>
+    </button>
+  </div>
+</div>
+
+<!-- ═══ INSERISCI ═══ -->
+<div class="scr" id="scrInserisci">
+  <div class="panel">
+    <div class="ph"><h2>Nuova giornata</h2></div>
+    <div class="pb">
+      <div class="row2">
+        <div class="fg"><label>Data</label><input type="date" id="fData"></div>
+        <div class="fg"><label>Cliente</label><input type="text" id="fCliente" placeholder="Nome cliente" oninput="onClienteInput()"></div>
+      </div>
+
+      <div class="sec-lbl">Mattino</div>
+      <div class="row2">
+        <div class="fg"><label>Dalle</label><input type="number" id="fMatDa" step="0.5" min="0" max="24" placeholder="7.5" oninput="autoCalc()"></div>
+        <div class="fg"><label>Alle</label><input type="number" id="fMatA" step="0.5" min="0" max="24" placeholder="12" oninput="autoCalc()"></div>
+      </div>
+
+      <div class="sec-lbl">Pomeriggio</div>
+      <div class="row2">
+        <div class="fg"><label>Dalle</label><input type="number" id="fPomDa" step="0.5" min="0" max="24" placeholder="13.5" oninput="autoCalc()"></div>
+        <div class="fg"><label>Alle</label><input type="number" id="fPomA" step="0.5" min="0" max="24" placeholder="17" oninput="autoCalc()"></div>
+      </div>
+
+      <div class="preview" id="prevCalc"></div>
+
+      <div class="row2">
+        <div class="fg"><label>Ore ordinarie</label><input type="number" id="fOrd" step="0.5" min="0" placeholder="8"></div>
+        <div class="fg"><label>Ore straordinarie</label><input type="number" id="fStra" step="0.5" min="0" placeholder="0"></div>
+      </div>
+
+      <div class="trasf-title">🇮🇹 Trasferta Italia</div>
+      <div class="trasf-grid">
+        <div>
+          <div class="trasf-col-header">Carico Cliente</div>
+          <div class="trasf-row" id="clientePranzo" onclick="toggleTrasf('clientePranzo')"><span class="lbl">🍽 Pranzo</span><span class="chk">☐</span></div>
+          <div class="trasf-row" id="clienteCena"   onclick="toggleTrasf('clienteCena')"  ><span class="lbl">🌙 Cena</span><span class="chk">☐</span></div>
+        </div>
+        <div>
+          <div class="trasf-col-header">Carico Nostro</div>
+          <div class="trasf-row" id="nostroPranzo" onclick="toggleTrasf('nostroPranzo')"><span class="lbl">🍽 Pranzo</span><span class="chk">☐</span></div>
+          <div class="trasf-row" id="nostroCena"   onclick="toggleTrasf('nostroCena')"  ><span class="lbl">🌙 Cena</span><span class="chk">☐</span></div>
+        </div>
+      </div>
+
+      <div class="trasf-title">🌍 Trasferta Estero</div>
+      <div class="trasf-grid">
+        <div class="trasf-row" id="esteroPranzo" onclick="toggleTrasf('esteroPranzo')"><span class="lbl">🍽 Pranzo</span><span class="chk">☐</span></div>
+        <div class="trasf-row" id="esteroCena"   onclick="toggleTrasf('esteroCena')"  ><span class="lbl">🌙 Cena</span><span class="chk">☐</span></div>
+      </div>
+
+      <div class="sec-lbl">Note Spesa</div>
+      <div class="note-spesa-grid">
+        <div class="fg"><label>Pranzo (€)</label><input type="number" id="spesaPranzo" step="0.01" min="0" placeholder="0,00"></div>
+        <div class="fg"><label>Cena (€)</label><input type="number" id="spesaCena" step="0.01" min="0" placeholder="0,00"></div>
+      </div>
+
+      <div class="fg"><label>KM</label><input type="number" id="fKm" min="0" placeholder="0"></div>
+
+      <div class="sec-lbl">Assenze</div>
+      <div class="assenze-grid">
+        <div class="assenza-card">
+          <div class="assenza-title">🏥 Malattia</div>
+          <label><input type="checkbox" id="malattiaCheck" onchange="onAssenzaChange('malattia')"> 8 ore</label>
+        </div>
+        <div class="assenza-card">
+          <div class="assenza-title">🌴 Ferie</div>
+          <label><input type="checkbox" id="ferieCheck" onchange="onAssenzaChange('ferie')"> 8 ore</label>
+        </div>
+      </div>
+      <div class="permessi-row">
+        <span class="plbl">⏱️ Permessi</span>
+        <input type="number" id="permessi" step="0.5" min="0" max="24" placeholder="0">
+        <span style="font-size:13px;color:#888">ore</span>
+      </div>
+
+      <div class="fg"><label>Codici Errore</label><input type="text" id="fCodici" placeholder="es. E1581 D1234 F0012" autocomplete="off" autocapitalize="characters"></div>
+      <div class="fg"><label>Note</label><input type="text" id="fNote" placeholder="es. Trasferta Milano"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-p" onclick="salva()">Salva giornata</button>
+        <button class="btn" onclick="resetForm()">Cancella</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ VISUALIZZA ═══ -->
+<div class="scr" id="scrVisualizza">
+  <div class="stats" id="visStats"></div>
+  <div class="subnav">
+    <button class="btn btn-s btn-p" id="subReg" onclick="subView('reg')">Registro</button>
+    <button class="btn btn-s" id="subRie" onclick="subView('rie')">Riepilogo annuale</button>
+  </div>
+
+  <div id="viewReg">
+    <div class="filters">
+      <div class="fg" style="min-width:160px"><label>Mese rapido</label><select id="visMeseRapido" onchange="selezionaMeseVis()"><option value="">— scegli un mese —</option></select></div>
+      <div class="fg"><label>Mese</label><input type="month" id="filtMese" onchange="renderLista()"></div>
+      <div class="fg"><label>Cliente</label><input type="text" id="filtCliente" placeholder="Cerca…" oninput="renderLista()"></div>
+      <button class="btn btn-s" onclick="resetFiltri()">Reset</button>
+    </div>
+    <div class="panel">
+      <div class="twrap">
+        <table>
+          <thead>
+            <tr><th>Data</th><th>Cliente</th><th>Orari</th><th>Ore</th><th>Stra</th><th>KM</th><th>Trasf</th><th>Assenze</th><th></th></tr>
+          </thead>
+          <tbody id="tbodyLista"></tbody>
+        </table>
+      </div>
+      <div id="emptyLista" class="empty" style="display:none">Nessun record trovato.</div>
+    </div>
+  </div>
+
+  <div id="viewRie" style="display:none">
+    <div class="filters">
+      <div class="fg" style="max-width:170px"><label>Anno</label><select id="selAnno" onchange="renderRiepilogo()"></select></div>
+    </div>
+    <div class="panel">
+      <div class="twrap">
+        <table>
+          <thead>
+            <tr><th>Mese</th><th>Giorni</th><th>Ore tot</th><th>Ord</th><th>Straord</th><th>KM</th><th>Assenze</th></tr>
+          </thead>
+          <tbody id="tbodyRie"></tbody>
+        </table>
+      </div>
+      <div id="emptyRie" class="empty" style="display:none">Nessun dato per questo anno.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TRASFERTE ═══ -->
+<div class="scr" id="scrTrasferte">
+  <div class="panel">
+    <div class="ph"><h2>Riepilogo Trasferte e Spese</h2></div>
+    <div class="pb">
+      <div class="fg" style="margin-bottom:12px"><label>Mese rapido</label><select id="trasfMeseRapido" onchange="selezionaMeseTrasferte()"><option value="">— scegli un mese —</option></select></div>
+      <div class="filters">
+        <div class="fg"><label>Da</label><input type="date" id="filtTrasfDa"></div>
+        <div class="fg"><label>A</label><input type="date" id="filtTrasfA"></div>
+        <button class="btn btn-s btn-p" onclick="calcolaRiepilogo()">Calcola</button>
+        <button class="btn btn-s" onclick="resetFiltriTrasf()">Reset</button>
+      </div>
+      <div class="sec-lbl">Presenza</div>
+      <div id="trasfPieWrap" style="max-width:280px;margin:0 auto 16px auto;position:relative">
+        <canvas id="chartTrasfPie" height="220"></canvas>
+        <div id="trasfPieLegend" style="text-align:center;font-size:13px;margin-top:6px"></div>
+      </div>
+      <div class="sec-lbl">Riepilogo Trasferte</div>
+      <div id="riepilogoTrasferte"></div>
+      <div class="sec-lbl">Riepilogo Spese Effettive</div>
+      <div id="riepilogoSpese"></div>
+      <div id="totaleKm" style="margin-top:10px;"></div>
+      <div id="totaleComplessivo" style="margin-top:10px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ BUSTA PAGA ═══ -->
+<div class="scr" id="scrBusta">
+  <!-- LOCK -->
+  <div id="bustaLock" class="panel" style="display:none">
+    <div class="lock-screen">
+      <div class="lock-icon">🔒</div>
+      <div class="lock-title">Area Protetta</div>
+      <div class="lock-desc">Inserisci il PIN a 4 cifre per accedere alla Busta Paga</div>
+      <div class="pin-input">
+        <input type="number" id="pin1" maxlength="1" min="0" max="9" oninput="pinNext(this,'pin2')" onkeydown="pinKey(event,this,null,'pin2')">
+        <input type="number" id="pin2" maxlength="1" min="0" max="9" oninput="pinNext(this,'pin3')" onkeydown="pinKey(event,this,'pin1','pin3')">
+        <input type="number" id="pin3" maxlength="1" min="0" max="9" oninput="pinNext(this,'pin4')" onkeydown="pinKey(event,this,'pin2','pin4')">
+        <input type="number" id="pin4" maxlength="1" min="0" max="9" oninput="pinNext(this,null)"   onkeydown="pinKey(event,this,'pin3',null)">
+      </div>
+      <div class="pin-error" id="pinError"></div>
+      <button class="btn btn-p" onclick="verificaPin()" style="width:180px">Accedi</button>
+    </div>
+  </div>
+  <!-- CONTENUTO -->
+  <!-- Selettore mese sempre visibile -->
+  <div class="panel" id="bustaMesePanel">
+    <div class="pb" style="padding-bottom:14px">
+      <div class="fg" style="margin-bottom:10px">
+        <label>Mese rapido</label>
+        <select id="bustaMeseRapido" onchange="selezionaMeseBusta()">
+          <option value="">— scegli un mese —</option>
+        </select>
+      </div>
+      <div class="filters" style="margin-bottom:0">
+        <div class="fg"><label>Oppure inserisci manualmente</label><input type="month" id="bustaMese" onchange="calcolaBusta()"></div>
+        <button class="btn btn-s btn-p" onclick="calcolaBusta()">Aggiorna</button>
+        <button class="btn btn-s" id="btnBloccaBusta" onclick="bloccaBusta()" style="display:none">🔒 Blocca</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="bustaContenuto" style="display:none">
+    <div class="panel">
+      <div class="ph"><h2>📊 Consuntivo mese</h2></div>
+      <div class="pb">
+        <div id="bustaRisultato"></div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:0;border-top:none;border-radius:0 0 12px 12px;border-top:2px solid #e6f1fb;">
+      <div class="ph" style="background:#e6f1fb;">
+        <h2 style="color:#185fa5">🔮 Preventivo a fine mese</h2>
+      </div>
+      <div class="pb">
+        <div id="bustaPreventivo"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══ GRAFICI ═══ -->
+<div class="scr" id="scrGrafici">
+  <div class="panel">
+    <div class="ph"><h2>Seleziona periodo</h2></div>
+    <div class="pb">
+      <div class="fg"><label>Mese rapido</label>
+        <select id="grafMeseRapido" onchange="selezionaMeseRapido()" style="margin-bottom:10px">
+          <option value="">— scegli un mese —</option>
+        </select>
+      </div>
+      <div class="row2">
+        <div class="fg"><label>Da</label><input type="date" id="grafDa"></div>
+        <div class="fg"><label>A</label><input type="date" id="grafA"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-p btn-s" onclick="aggiornaGrafici()">Aggiorna grafici</button>
+        <button class="btn btn-s" onclick="resetPeriodoGrafici()">Questo mese</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><h2>Ore lavorate per giorno</h2></div>
+    <div class="pb" style="padding:10px 8px;">
+      <canvas id="chartOre" height="220"></canvas>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><h2>Distribuzione ore</h2></div>
+    <div class="pb" style="padding:10px 8px;">
+      <canvas id="chartDonut" height="220"></canvas>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><h2>KM per giorno</h2></div>
+    <div class="pb" style="padding:10px 8px;">
+      <canvas id="chartKm" height="180"></canvas>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><h2>Riepilogo periodo</h2></div>
+    <div class="pb" id="grafRiepilogo"></div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><h2>💰 Busta Paga Preventiva</h2></div>
+    <div class="pb" id="grafBusta"></div>
+  </div>
+</div>
+
+
+<!-- ═══ CLIENTI ═══ -->
+<div class="scr" id="scrClienti">
+  <div class="panel">
+    <div class="ph"><h2>Cerca cliente</h2></div>
+    <div class="pb" style="padding-bottom:10px">
+      <div class="fg" style="margin-bottom:0">
+        <input type="text" id="clienteSearch" placeholder="Digita il nome del cliente..." oninput="cercaClienti()" autocomplete="off">
+      </div>
+    </div>
+  </div>
+  <div id="clienteLista"></div>
+  <div id="clienteDettaglio" style="display:none">
+    <div class="panel">
+      <div class="ph">
+        <h2 id="clienteDetNome"></h2>
+        <button class="btn btn-s" onclick="tornaListaClienti()">← Lista</button>
+      </div>
+      <div class="pb" style="padding-bottom:4px">
+        <div class="stats" id="clienteDetStats"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="pb" style="padding:0">
+        <div id="clienteDetRighe"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODIFICA ═══ -->
+<div class="scr" id="scrModifica">
+  <div class="panel">
+    <div class="ph"><h2>Modifica giornata</h2></div>
+    <div class="pb">
+      <div class="row2">
+        <div class="fg"><label>Data</label><input type="date" id="mData" disabled></div>
+        <div class="fg"><label>Cliente</label><input type="text" id="mCliente" placeholder="Nome cliente"></div>
+      </div>
+      <div class="sec-lbl">Mattino</div>
+      <div class="row2">
+        <div class="fg"><label>Dalle</label><input type="number" id="mMatDa" step="0.5" min="0" max="24" oninput="autoCalcMod()"></div>
+        <div class="fg"><label>Alle</label><input type="number" id="mMatA" step="0.5" min="0" max="24" oninput="autoCalcMod()"></div>
+      </div>
+      <div class="sec-lbl">Pomeriggio</div>
+      <div class="row2">
+        <div class="fg"><label>Dalle</label><input type="number" id="mPomDa" step="0.5" min="0" max="24" oninput="autoCalcMod()"></div>
+        <div class="fg"><label>Alle</label><input type="number" id="mPomA" step="0.5" min="0" max="24" oninput="autoCalcMod()"></div>
+      </div>
+      <div class="preview" id="mPrevCalc"></div>
+      <div class="row2">
+        <div class="fg"><label>Ore ordinarie</label><input type="number" id="mOrd" step="0.5" min="0"></div>
+        <div class="fg"><label>Ore straordinarie</label><input type="number" id="mStra" step="0.5" min="0"></div>
+      </div>
+      <div class="trasf-title">🇮🇹 Trasferta Italia</div>
+      <div class="trasf-grid">
+        <div>
+          <div class="trasf-col-header">Carico Cliente</div>
+          <div class="trasf-row" id="m_clientePranzo" onclick="toggleTrasf('m_clientePranzo')"><span class="lbl">🍽 Pranzo</span><span class="chk">☐</span></div>
+          <div class="trasf-row" id="m_clienteCena"   onclick="toggleTrasf('m_clienteCena')"  ><span class="lbl">🌙 Cena</span><span class="chk">☐</span></div>
+        </div>
+        <div>
+          <div class="trasf-col-header">Carico Nostro</div>
+          <div class="trasf-row" id="m_nostroPranzo" onclick="toggleTrasf('m_nostroPranzo')"><span class="lbl">🍽 Pranzo</span><span class="chk">☐</span></div>
+          <div class="trasf-row" id="m_nostroCena"   onclick="toggleTrasf('m_nostroCena')"  ><span class="lbl">🌙 Cena</span><span class="chk">☐</span></div>
+        </div>
+      </div>
+      <div class="trasf-title">🌍 Trasferta Estero</div>
+      <div class="trasf-grid">
+        <div class="trasf-row" id="m_esteroPranzo" onclick="toggleTrasf('m_esteroPranzo')"><span class="lbl">🍽 Pranzo</span><span class="chk">☐</span></div>
+        <div class="trasf-row" id="m_esteroCena"   onclick="toggleTrasf('m_esteroCena')"  ><span class="lbl">🌙 Cena</span><span class="chk">☐</span></div>
+      </div>
+      <div class="sec-lbl">Note Spesa</div>
+      <div class="row2">
+        <div class="fg"><label>Pranzo (€)</label><input type="number" id="mSpesaPranzo" step="0.01" min="0" placeholder="0,00"></div>
+        <div class="fg"><label>Cena (€)</label><input type="number" id="mSpesaCena" step="0.01" min="0" placeholder="0,00"></div>
+      </div>
+      <div class="fg"><label>KM</label><input type="number" id="mKm" min="0"></div>
+      <div class="sec-lbl">Assenze</div>
+      <div class="assenze-grid">
+        <div class="assenza-card"><div class="assenza-title">🏥 Malattia</div><label><input type="checkbox" id="mMalattia"> 8 ore</label></div>
+        <div class="assenza-card"><div class="assenza-title">🌴 Ferie</div><label><input type="checkbox" id="mFerie"> 8 ore</label></div>
+      </div>
+      <div class="permessi-row">
+        <span class="plbl">⏱️ Permessi</span>
+        <input type="number" id="mPermessi" step="0.5" min="0" max="24" placeholder="0">
+        <span style="font-size:13px;color:#888">ore</span>
+      </div>
+      <div class="fg"><label>Codici Errore</label><input type="text" id="mCodici" placeholder="es. E1581 D1234" autocomplete="off" autocapitalize="characters"></div>
+      <div class="fg"><label>Note</label><input type="text" id="mNote" placeholder="es. Trasferta Milano"></div>
+      <input type="hidden" id="mIdx">
+      <input type="hidden" id="mOrigScreen">
+      <div class="btn-row">
+        <button class="btn btn-p" onclick="salvaModifica()">💾 Salva modifiche</button>
+        <button class="btn btn-d" onclick="eliminaDaModifica()">🗑 Elimina</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══ CODICI ERRORE ═══ -->
+<div class="scr" id="scrCodici">
+  <div class="panel">
+    <div class="ph"><h2>Cerca codice errore</h2></div>
+    <div class="pb" style="padding-bottom:10px">
+      <div class="fg" style="margin-bottom:0">
+        <input type="text" id="codiceSearch" placeholder="es. E1581" oninput="cercaCodice()"
+          autocomplete="off" autocapitalize="characters"
+          style="text-transform:uppercase;font-size:16px;font-weight:600;letter-spacing:1px;">
+      </div>
+    </div>
+  </div>
+  <div id="codiciStats" style="display:none" class="panel">
+    <div class="pb" style="padding-bottom:4px">
+      <div class="stats" id="codiciStatsBox"></div>
+    </div>
+  </div>
+  <div class="panel" id="codiciPanel" style="display:none">
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Data</th><th>Cliente</th><th>Codici</th><th>Ore</th><th></th></tr></thead>
+        <tbody id="codiciBody"></tbody>
+      </table>
+    </div>
+    <div id="codiciEmpty" class="empty" style="display:none">Nessun intervento trovato.</div>
+  </div>
+  <div id="codiciPlaceholder" class="empty">Digita un codice per cercare</div>
+</div>
+
+<!-- ═══ IMPOSTAZIONI ═══ -->
+<div class="scr" id="scrImpostazioni">
+
+  <div class="panel">
+    <div class="ph"><h2>Parametri di lavoro</h2></div>
+    <div class="pb">
+      <div class="set-row"><div class="set-info"><h3>Ore ordinarie/giorno</h3><p>Soglia per gli straordinari</p></div><input type="number" id="setOreStd" step="0.5" min="1" max="24"></div>
+      <div class="set-row"><div class="set-info"><h3>Paga €/ora ordinaria</h3><p>Tariffa oraria base</p></div><input type="number" id="setPaga" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Paga €/ora straordinaria</h3><p>Maggiore della paga base</p></div><input type="number" id="setPagaStra" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Trattenuta INPS %</h3><p>Percentuale contributi</p></div><input type="number" id="setInps" step="0.01" min="0" max="100"></div>
+      <div class="set-row"><div class="set-info"><h3>Trattenuta IRPEF %</h3><p>Percentuale imposta</p></div><input type="number" id="setIrpef" step="0.01" min="0" max="100"></div>
+      <div class="set-row"><div class="set-info"><h3>Tetto trasferte (€/gg)</h3><p>Importo giornaliero esente</p></div><input type="number" id="setTettoTrasf" step="0.5" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Premio produttività (€/ora)</h3><p>Trimestrale: mar/giu/set/dic</p></div><input type="number" id="setPremio" step="0.01" min="0"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><h2>🇮🇹 Trasferta Italia — Carico Cliente</h2></div>
+    <div class="pb">
+      <div class="set-row"><div class="set-info"><h3>Rimborso Pranzo (€)</h3></div><input type="number" id="setRimborsoClientePranzo" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Rimborso Cena (€)</h3></div><input type="number" id="setRimborsoClienteCena" step="0.01" min="0"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ph"><h2>🇮🇹 Trasferta Italia — Carico Nostro</h2></div>
+    <div class="pb">
+      <div class="set-row"><div class="set-info"><h3>Rimborso Pranzo (€)</h3></div><input type="number" id="setRimborsoNostroPranzo" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Rimborso Cena (€)</h3></div><input type="number" id="setRimborsoNostroCena" step="0.01" min="0"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ph"><h2>🌍 Trasferta Estero</h2></div>
+    <div class="pb">
+      <div class="set-row"><div class="set-info"><h3>Rimborso Pranzo (€)</h3></div><input type="number" id="setRimborsoEsteroPranzo" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Rimborso Cena (€)</h3></div><input type="number" id="setRimborsoEsteroCena" step="0.01" min="0"></div>
+      <div class="btn-row"><button class="btn btn-p" onclick="salvaImpostazioni()">Salva impostazioni</button></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><h2>🔒 PIN Busta Paga</h2></div>
+    <div class="pb">
+      <div class="set-row">
+        <div class="set-info"><h3>PIN attuale</h3><p>Lascia vuoto per disattivare la protezione</p></div>
+        <span id="pinStatoLabel" style="font-size:13px;color:#888"></span>
+      </div>
+      <div class="set-row">
+        <div class="set-info"><h3>Nuovo PIN (4 cifre)</h3></div>
+        <input type="password" id="setPin1" maxlength="4" pattern="[0-9]{4}" placeholder="••••" style="letter-spacing:6px;text-align:center;">
+      </div>
+      <div class="set-row">
+        <div class="set-info"><h3>Conferma PIN</h3></div>
+        <input type="password" id="setPin2" maxlength="4" pattern="[0-9]{4}" placeholder="••••" style="letter-spacing:6px;text-align:center;">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-p btn-s" onclick="salvaPin()">Salva PIN</button>
+        <button class="btn btn-s btn-d" onclick="rimuoviPin()">Rimuovi PIN</button>
+      </div>
+      <div id="pinMsg" style="font-size:13px;margin-top:8px;min-height:18px;"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><h2>Dati</h2></div>
+    <div class="pb">
+      <div class="set-row">
+        <div class="set-info"><h3>Esporta archivio</h3><p>Scarica tutti i record in JSON</p></div>
+        <button class="btn btn-s" onclick="esporta()">📥 Esporta</button>
+      </div>
+      <div class="set-row">
+        <div class="set-info"><h3>Importa da file JSON</h3><p>Seleziona il file .json esportato</p></div>
+        <label for="fileInput" class="btn btn-s" style="cursor:pointer;display:inline-block;">📂 Scegli file</label>
+      </div>
+      <input type="file" id="fileInput" accept=".json,application/json" style="display:none;" onchange="leggiFile(this)">
+      <div id="importArea" style="display:none;margin-top:14px;">
+        <div style="background:#f1efe8;border-radius:8px;padding:12px 14px;font-size:13px;color:#5f5e5a;margin-bottom:12px;">
+          📄 File: <strong id="fileLabel">—</strong>
+        </div>
+        <div style="margin-bottom:8px;font-size:12px;color:#888;text-align:center;">— oppure incolla il JSON manualmente —</div>
+        <textarea id="importJson" rows="4" style="width:100%;padding:10px;border:1px solid #d3d1c7;border-radius:8px;font-family:monospace;font-size:12px;resize:vertical;" placeholder='[{"data":"2024-01-15","cliente":"Tiesse","ore_tot":8,...}]'></textarea>
+        <div class="btn-row">
+          <button class="btn btn-p btn-s" onclick="importa()">✓ Conferma importazione</button>
+          <button class="btn btn-s" onclick="annullaImport()">Annulla</button>
+        </div>
+      </div>
+      <div class="set-row">
+        <div class="set-info"><h3>Svuota archivio</h3><p>Elimina tutti i dati — irreversibile</p></div>
+        <button class="btn btn-s btn-d" onclick="svuota()">Svuota</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><h2>Info</h2></div>
+    <div class="pb" style="font-size:13px;color:#888;line-height:1.9;">
+      <p id="infoCount" style="font-weight:600;color:#1a1a18;margin-bottom:4px;"></p>
+      <p>I dati sono salvati nel browser (localStorage).</p>
+      <p>Esporta regolarmente il JSON come backup.</p>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var DB_KEY  = 'rl_db_v3';
+var CFG_KEY = 'rl_cfg_v3';
+var MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+
+// ── STORAGE ──
+function db() { try { var d = localStorage.getItem(DB_KEY); return d ? JSON.parse(d) : []; } catch(e) { return []; } }
+function saveDb(d) { localStorage.setItem(DB_KEY, JSON.stringify(d)); }
+function cfg() {
+  var def = { ore_std:8, paga:10, paga_stra:12, inps:9.19, irpef:23,
+    rimborso_cliente_pranzo:25, rimborso_cliente_cena:30,
+    rimborso_nostro_pranzo:25, rimborso_nostro_cena:30,
+    rimborso_estero_pranzo:40, rimborso_estero_cena:50,
+    tetto_trasferte:40, premio_produttivita:0 };
+  try { var s = localStorage.getItem(CFG_KEY); return s ? Object.assign(def, JSON.parse(s)) : def; }
+  catch(e) { return def; }
+}
+function saveCfg(c) { localStorage.setItem(CFG_KEY, JSON.stringify(c)); }
+
+// ── NAVIGATION ──
+var TITLES = { inserisci:'Inserisci giornata', visualizza:'Visualizza', trasferte:'Riepilogo Trasferte', busta:'Busta Paga Preventiva', grafici:'Grafici', clienti:'Ricerca Clienti', codici:'Ricerca Codici Errore', modifica:'Modifica giornata', impostazioni:'Impostazioni' };
+var SCREENS = { home:'scrHome', inserisci:'scrInserisci', visualizza:'scrVisualizza', trasferte:'scrTrasferte', busta:'scrBusta', grafici:'scrGrafici', clienti:'scrClienti', codici:'scrCodici', modifica:'scrModifica', impostazioni:'scrImpostazioni' };
+
+function vai(name) {
+  Object.keys(SCREENS).forEach(function(k){ document.getElementById(SCREENS[k]).classList.remove('on'); });
+  document.getElementById(SCREENS[name]).classList.add('on');
+  document.getElementById('hdrTitle').textContent = TITLES[name] || 'Registro Lavoro';
+  var isHome = name === 'home';
+  document.getElementById('btnBack').classList.toggle('show', !isHome);
+  var fab = document.getElementById('fabBack');
+  if(fab) fab.classList.toggle('show', !isHome);
+  document.body.style.paddingBottom = isHome ? '50px' : '90px';
+  if(name === 'visualizza')  initVisualizza();
+  if(name === 'impostazioni') initImpostazioni();
+  if(name === 'trasferte')   { popolaTrasfMesi(); calcolaRiepilogo(); }
+  if(name === 'busta')       { initBusta(); }
+  if(name === 'grafici')     initGrafici();
+  if(name === 'clienti')     initClienti();
+  if(name === 'codici')      initCodici();
+}
+function goHome() { vai('home'); }
+
+// ── HOME ──
+function aggiornaHome() {
+  var now = new Date();
+  var gg = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+  document.getElementById('hdrSub').textContent = now.toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('homeDay').textContent = gg[now.getDay()]+' '+now.getDate()+' '+MESI[now.getMonth()]+' '+now.getFullYear();
+  var mese = now.toISOString().slice(0,7);
+  var rows = db().filter(function(r){ return r.data && r.data.startsWith(mese); });
+  var ore = rows.reduce(function(s,r){ return s+(r.ore_tot||0); },0);
+  var stra = rows.reduce(function(s,r){ return s+(r.ore_stra||0); },0);
+  var assenze = rows.reduce(function(s,r){ return s+(r.malattia||0)+(r.ferie||0)+(r.permessi||0); },0);
+  document.getElementById('homeSum').innerHTML =
+    '<b>'+MESI[now.getMonth()]+'</b>: '+ore.toFixed(1)+'h lavorate &nbsp;·&nbsp; Straord: '+stra.toFixed(1)+'h<br>Assenze: '+assenze+'h &nbsp;·&nbsp; Totale record: '+db().length;
+}
+
+// ── TRASFERTE FORM ──
+function toggleTrasf(id) {
+  var el = document.getElementById(id);
+  var chk = el.querySelector('.chk');
+  if(el.classList.contains('attiva')){ el.classList.remove('attiva'); chk.textContent='☐'; }
+  else { el.classList.add('attiva'); chk.textContent='☒'; }
+}
+function getTrasfData() {
+  return {
+    clientePranzo:       document.getElementById('clientePranzo').classList.contains('attiva'),
+    clienteCena:         document.getElementById('clienteCena').classList.contains('attiva'),
+    nostroPranzo:        document.getElementById('nostroPranzo').classList.contains('attiva'),
+    nostroCena:          document.getElementById('nostroCena').classList.contains('attiva'),
+    esteroPranzo: document.getElementById('esteroPranzo').classList.contains('attiva'),
+    esteroCena:   document.getElementById('esteroCena').classList.contains('attiva')
+  };
+}
+function resetTrasf() {
+  ['clientePranzo','clienteCena','nostroPranzo','nostroCena',
+   'esteroPranzo','esteroCena'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el){ el.classList.remove('attiva'); el.querySelector('.chk').textContent='☐'; }
+  });
+}
+function contaTrasf(t) {
+  if(!t) return 0;
+  if(typeof t === 'number') return t > 0 ? 1 : 0;
+  return (t.clientePranzo?1:0)+(t.clienteCena?1:0)+(t.nostroPranzo?1:0)+(t.nostroCena?1:0)+
+         (t.esteroPranzo?1:0)+(t.esteroCena?1:0);
+}
+function labelTrasf(t) {
+  if(!t) return '—';
+  if(typeof t === 'number') return t > 0 ? t+' trasf.' : '—';
+  if(contaTrasf(t)===0) return '—';
+  var p=[];
+  if(t.clientePranzo) p.push('[I]CP');
+  if(t.clienteCena)   p.push('[I]CC');
+  if(t.nostroPranzo)  p.push('[I]NP');
+  if(t.nostroCena)    p.push('[I]NC');
+  if(t.esteroPranzo)  p.push('[E]P');
+  if(t.esteroCena)    p.push('[E]C');
+  return p.join(' ');
+}
+
+// ── AUTOCALC ──
+// Quando si scrive il nome cliente → compila ore di default se ancora vuote
+function onClienteInput() {
+  var cl = document.getElementById('fCliente').value.trim();
+  var ord = document.getElementById('fOrd').value;
+  var stra = document.getElementById('fStra').value;
+  // se il cliente è appena stato scritto (primo carattere) e le ore sono vuote → metti default
+  if(cl.length >= 1 && !ord && !stra) {
+    var std = cfg().ore_std;
+    document.getElementById('fOrd').value = std.toFixed(1);
+    document.getElementById('fStra').value = '0.0';
+    document.getElementById('prevCalc').style.display = 'block';
+    document.getElementById('prevCalc').textContent = 'Ore impostate di default: ' + std.toFixed(1) + 'h ordinarie';
+  }
+  // se cancella il nome → azzera le ore di default (solo se non ci sono orari inseriti)
+  if(cl.length === 0) {
+    var haOrari = document.getElementById('fMatDa').value || document.getElementById('fMatA').value;
+    if(!haOrari) {
+      document.getElementById('fOrd').value = '';
+      document.getElementById('fStra').value = '';
+      document.getElementById('prevCalc').style.display = 'none';
+    }
+  }
+  // disabilita visivamente ferie/malattia se c'è cliente con ore
+  aggiornaStatoAssenze();
+}
+
+function aggiornaStatoAssenze() {
+  var fClEl = document.getElementById('fCliente');
+  var fOrdEl = document.getElementById('fOrd');
+  var malEl = document.getElementById('malattiaCheck');
+  var ferEl = document.getElementById('ferieCheck');
+  if(!fClEl || !fOrdEl || !malEl || !ferEl) return;
+  var cl = fClEl.value.trim();
+  var haOre = parseFloat(fOrdEl.value) > 0;
+  var haCliente = cl && cl !== 'Malattia' && cl !== 'Ferie';
+  var blocca = haCliente && haOre;
+  var malCard = malEl.closest('.assenza-card');
+  var ferCard = ferEl.closest('.assenza-card');
+  if(malCard) { malCard.style.opacity = blocca ? '0.4' : '1'; malCard.title = blocca ? 'Non disponibile con cliente e ore' : ''; }
+  if(ferCard) { ferCard.style.opacity = blocca ? '0.4' : '1'; ferCard.title = blocca ? 'Non disponibile con cliente e ore' : ''; }
+}
+
+// Quando si clicca Malattia o Ferie
+// Solo il campo Cliente viene gestito automaticamente.
+function onAssenzaChange(tipo) {
+  var malCheck   = document.getElementById('malattiaCheck');
+  var ferCheck   = document.getElementById('ferieCheck');
+  var clienteEl  = document.getElementById('fCliente');
+  var prevEl     = document.getElementById('prevCalc');
+  var permEl     = document.getElementById('permessi');
+  var permRow    = permEl.closest('.permessi-row');
+
+  // se c'è già un cliente con ore → ferie/malattia non consentite
+  var haCliente = clienteEl.value.trim() && clienteEl.value !== 'Malattia' && clienteEl.value !== 'Ferie';
+  var haOre     = parseFloat(document.getElementById('fOrd').value) > 0;
+  if(haCliente && haOre) {
+    if(tipo === 'malattia' && malCheck.checked) {
+      malCheck.checked = false;
+      alert('⚠ Non puoi segnare Malattia se hai già inserito un cliente con ore lavorate.\nSe vuoi aggiungere dei permessi usa il campo Permessi.');
+    }
+    if(tipo === 'ferie' && ferCheck.checked) {
+      ferCheck.checked = false;
+      alert('⚠ Non puoi segnare Ferie se hai già inserito un cliente con ore lavorate.\nSe vuoi aggiungere dei permessi usa il campo Permessi.');
+    }
+    return;
+  }
+
+  if(tipo === 'malattia') {
+    if(malCheck.checked) {
+      ferCheck.checked       = false;
+      clienteEl.value        = 'Malattia';
+      clienteEl.disabled     = true;
+      permEl.value           = '';
+      permEl.disabled        = true;
+      permRow.style.opacity  = '0.4';
+      prevEl.style.display   = 'block';
+      prevEl.textContent     = 'Malattia selezionata — i permessi non sono disponibili';
+    } else {
+      clienteEl.disabled     = false;
+      if(clienteEl.value === 'Malattia') clienteEl.value = '';
+      permEl.disabled        = false;
+      permRow.style.opacity  = '1';
+      prevEl.style.display   = 'none';
+    }
+  }
+
+  if(tipo === 'ferie') {
+    if(ferCheck.checked) {
+      malCheck.checked       = false;
+      clienteEl.value        = 'Ferie';
+      clienteEl.disabled     = true;
+      permEl.value           = '';
+      permEl.disabled        = true;
+      permRow.style.opacity  = '0.4';
+      prevEl.style.display   = 'block';
+      prevEl.textContent     = 'Ferie selezionate — i permessi non sono disponibili';
+    } else {
+      clienteEl.disabled     = false;
+      if(clienteEl.value === 'Ferie') clienteEl.value = '';
+      permEl.disabled        = false;
+      permRow.style.opacity  = '1';
+      prevEl.style.display   = 'none';
+    }
+  }
+}
+
+function autoCalc() {
+  var md=parseFloat(document.getElementById('fMatDa').value)||0;
+  var ma=parseFloat(document.getElementById('fMatA').value)||0;
+  var pd=parseFloat(document.getElementById('fPomDa').value)||0;
+  var pa=parseFloat(document.getElementById('fPomA').value)||0;
+  var tot=(ma-md)+(pa-pd);
+  var prev=document.getElementById('prevCalc');
+  if(tot>0){
+    var std=cfg().ore_std, ord=Math.min(tot,std), stra=Math.max(0,tot-std);
+    document.getElementById('fOrd').value=ord.toFixed(1);
+    document.getElementById('fStra').value=stra.toFixed(1);
+    prev.style.display='block';
+    prev.textContent='Totale: '+tot.toFixed(1)+'h → Ordinarie: '+ord.toFixed(1)+'h   Straordinarie: '+stra.toFixed(1)+'h';
+  } else { prev.style.display='none'; }
+}
+
+// ── SALVA ──
+function salva() {
+  var data=document.getElementById('fData').value;
+  if(!data){ toast('⚠ Inserisci la data'); return; }
+  // controlla data duplicata
+  var esistente = db().filter(function(r){ return r.data === data; });
+  if(esistente.length > 0) {
+    var manuali = esistente.filter(function(r){ return r.manuale; });
+    if(manuali.length > 0) {
+      var nomiGia = manuali.map(function(r){ return r.cliente||'(senza nome)'; }).join(', ');
+      if(!confirm('\u26a0 Esiste gi\u00e0 un record per il ' + data.split('-').reverse().join('/') + ':\n' + nomiGia + '\n\nOK = salva comunque | Annulla = modifica')) {
+        vai('visualizza');
+        var fm=document.getElementById('filtMese'); if(fm) fm.value=data.slice(0,7);
+        renderLista(); return;
+      }
+    } else {
+      // record importato non manuale: sovrascrivilo silenziosamente
+      var d2=db(), idxDup=-1;
+      for(var i=0;i<d2.length;i++){ if(d2[i].data===data&&!d2[i].manuale){idxDup=i;break;} }
+      if(idxDup>=0){ d2.splice(idxDup,1); saveDb(d2); }
+    }
+  }
+  var ord=parseFloat(document.getElementById('fOrd').value)||0;
+  var stra=parseFloat(document.getElementById('fStra').value)||0;
+  var rec = {
+    data: data,
+    manuale: true,
+    cliente: document.getElementById('fCliente').value.trim(),
+    mat_da: parseFloat(document.getElementById('fMatDa').value)||0,
+    mat_a:  parseFloat(document.getElementById('fMatA').value)||0,
+    pom_da: parseFloat(document.getElementById('fPomDa').value)||0,
+    pom_a:  parseFloat(document.getElementById('fPomA').value)||0,
+    ore_ord: ord, ore_stra: stra, ore_tot: ord+stra,
+    trasferte: getTrasfData(),
+    spesa_pranzo: parseFloat(document.getElementById('spesaPranzo').value)||0,
+    spesa_cena:   parseFloat(document.getElementById('spesaCena').value)||0,
+    km:      parseInt(document.getElementById('fKm').value)||0,
+    malattia: document.getElementById('malattiaCheck').checked ? 8 : 0,
+    ferie:    document.getElementById('ferieCheck').checked ? 8 : 0,
+    permessi: parseFloat(document.getElementById('permessi').value)||0,
+    codici:   document.getElementById('fCodici').value.trim().toUpperCase(),
+    note:     document.getElementById('fNote').value.trim()
+  };
+  var d=db(); d.push(rec); saveDb(d);
+  resetForm(); toast('✓ Giornata salvata'); aggiornaHome();
+}
+
+function resetForm() {
+  ['fCliente','fMatDa','fMatA','fPomDa','fPomA','fOrd','fStra','spesaPranzo','spesaCena','fKm','permessi','fCodici','fNote'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('fData').value=new Date().toISOString().split('T')[0];
+  document.getElementById('fCliente').disabled = false;
+  document.getElementById('permessi').disabled = false;
+  document.getElementById('permessi').closest('.permessi-row').style.opacity = '1';
+  document.getElementById('malattiaCheck').checked=false;
+  document.getElementById('ferieCheck').checked=false;
+  document.getElementById('prevCalc').style.display='none';
+  resetTrasf();
+}
+
+// ── VISUALIZZA ──
+function initVisualizza() {
+  renderStats();
+  popolaMesiVis();
+  // popola selAnno se vuoto
+  var sel=document.getElementById('selAnno');
+  if(sel.children.length===0){
+    var y0=new Date().getFullYear();
+    for(var y=2020;y<=y0+1;y++){
+      var o=document.createElement('option'); o.value=y; o.textContent=y;
+      if(y===y0) o.selected=true;
+      sel.appendChild(o);
+    }
+  }
+  renderLista();
+}
+
+function renderStats() {
+  try {
+  var filtEl = document.getElementById('filtMese');
+  var mese = (filtEl && filtEl.value) ? filtEl.value : new Date().toISOString().slice(0,7);
+  var filtCliEl = document.getElementById('filtCliente');
+  var cli = (filtCliEl ? filtCliEl.value||'' : '').toLowerCase();
+  var rows = db().filter(function(r){
+    return r.manuale && r.data && r.data.startsWith(mese) &&
+           (!cli || (r.cliente||'').toLowerCase().indexOf(cli) !== -1);
+  });
+  var oreTot=0,oreOrd=0,oreStra=0,kmTot=0,assenzeTot=0;
+  rows.forEach(function(r){
+    oreTot  += r.ore_tot  || 0;
+    oreOrd  += r.ore_ord  || 0;
+    oreStra += r.ore_stra || 0;
+    kmTot   += r.km       || 0;
+    assenzeTot += (r.malattia||0)+(r.ferie||0)+(r.permessi||0);
+  });
+  var p = mese.split('-');
+  var ML = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+  var lbl = ML[parseInt(p[1])-1]+' '+p[0];
+  var visEl = document.getElementById('visStats');
+  if(visEl) visEl.innerHTML =
+    '<div class="stat" style="grid-column:1/-1;background:#f9f8f5;padding:6px 14px 2px;"><div class="stat-l">Totali — '+lbl+'</div></div>'+
+    [['Ore tot',oreTot.toFixed(1)+'h'],['Ore ord',oreOrd.toFixed(1)+'h'],['Straord',oreStra.toFixed(1)+'h'],['KM',kmTot+' km'],['Assenze',assenzeTot+'h']]
+    .map(function(d){ return '<div class="stat"><div class="stat-l">'+d[0]+'</div><div class="stat-v">'+d[1]+'</div></div>'; }).join('');
+  } catch(e) { console.error('renderStats error:', e); }
+}
+
+function subView(v) {
+  document.getElementById('viewReg').style.display=v==='reg'?'block':'none';
+  document.getElementById('viewRie').style.display=v==='rie'?'block':'none';
+  document.getElementById('subReg').className='btn btn-s'+(v==='reg'?' btn-p':'');
+  document.getElementById('subRie').className='btn btn-s'+(v==='rie'?' btn-p':'');
+  if(v==='rie') renderRiepilogo();
+}
+
+function resetFiltri() {
+  document.getElementById('filtMese').value=new Date().toISOString().slice(0,7);
+  document.getElementById('filtCliente').value='';
+  var sel=document.getElementById('visMeseRapido');
+  if(sel) sel.value=new Date().toISOString().slice(0,7);
+  renderLista();
+}
+
+function popolaMesiVis() {
+  var sel = document.getElementById('visMeseRapido');
+  if(!sel) return;
+  var mesiPresenti = {};
+  db().forEach(function(r){ if(r.data) mesiPresenti[r.data.slice(0,7)] = true; });
+  var mesiOrd = Object.keys(mesiPresenti).sort().reverse();
+  var curMese = new Date().toISOString().slice(0,7);
+  sel.innerHTML = '<option value="">— scegli un mese —</option>';
+  mesiOrd.forEach(function(m){
+    var p = m.split('-');
+    var lbl = MESI[parseInt(p[1])-1] + ' ' + p[0];
+    var opt = document.createElement('option');
+    opt.value = m; opt.textContent = lbl;
+    if(m === curMese) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function selezionaMeseVis() {
+  var val = document.getElementById('visMeseRapido').value;
+  if(!val) return;
+  document.getElementById('filtMese').value = val;
+  renderLista();
+}
+
+
+// Festività italiane fisse (giorno-mese)
+var FESTIVITA_IT = ['01-01','06-01','25-04','01-05','02-06','15-08','01-11','08-12','25-12','26-12'];
+
+function isFestivo(dataStr) {
+  if(!dataStr) return false;
+  var d = new Date(dataStr + 'T12:00:00');
+  var dow = d.getDay();
+  if(dow === 0 || dow === 6) return true; // sabato o domenica
+  var mm = String(d.getMonth()+1).padStart(2,'0');
+  var dd = String(d.getDate()).padStart(2,'0');
+  return FESTIVITA_IT.indexOf(dd+'-'+mm) !== -1;
+}
+
+// Genera tutti i giorni lavorativi (lun-ven non festivi) di un mese
+function giorniLavorativiMese(meseStr) {
+  if(!meseStr) return [];
+  var p = meseStr.split('-');
+  var anno = parseInt(p[0]), mese = parseInt(p[1])-1;
+  var giorni = [];
+  var ultimo = new Date(anno, mese+1, 0).getDate();
+  for(var g=1; g<=ultimo; g++) {
+    var d = anno+'-'+String(mese+1).padStart(2,'0')+'-'+String(g).padStart(2,'0');
+    if(!isFestivo(d)) giorni.push(d);
+  }
+  return giorni;
+}
+
+function renderLista() {
+  try { renderStats(); } catch(e) {}
+  var mes = document.getElementById('filtMese') ? document.getElementById('filtMese').value : '';
+  var cli = (document.getElementById('filtCliente') ? document.getElementById('filtCliente').value||'' : '').toLowerCase();
+  var all = db();
+  var filtered = all.map(function(r,i){return {r:r,idx:i};}).filter(function(item){
+    var r = item.r;
+    if(!r.manuale) return false; // mostra SOLO record inseriti manualmente
+    if(mes && !(r.data && r.data.startsWith(mes))) return false;
+    if(cli && (r.cliente||'').toLowerCase().indexOf(cli)===-1) return false;
+    return true;
+  });
+  filtered.sort(function(a,b){ return a.r.data.localeCompare(b.r.data); });
+  var body  = document.getElementById('tbodyLista');
+  var empty = document.getElementById('emptyLista');
+  if(!body) return;
+  if(!filtered.length){ body.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  var html='';
+  filtered.forEach(function(item){
+    var r=item.r, idx=item.idx;
+    var orari='';
+    if(r.mat_da&&r.mat_a) orari+=r.mat_da+'–'+r.mat_a;
+    if(r.pom_da&&r.pom_a) orari+=(orari?' / ':'')+r.pom_da+'–'+r.pom_a;
+    var assenze='';
+    if(r.malattia) assenze+='<span class="bdg bdg-m">M'+r.malattia+'h</span> ';
+    if(r.ferie)    assenze+='<span class="bdg bdg-f">F'+r.ferie+'h</span> ';
+    if(r.permessi) assenze+='<span class="bdg bdg-p">P'+r.permessi+'h</span>';
+    if(!assenze)   assenze='&#8212;';
+    html+='<tr style="cursor:pointer" onclick="apriModifica('+idx+',&quot;visualizza&quot;)">'+
+      '<td><b>'+fmt(r.data)+'</b>'+
+        (r.codici?'<br><small style="color:#c0392b;font-weight:600">'+esc(r.codici)+'</small>':'')+
+        (r.note?'<br><small style="color:#888">'+esc(r.note)+'</small>':'')+
+        ' <span style="font-size:10px;color:#ccc">&#9998;</span></td>'+
+      '<td>'+(r.cliente?'<span class="bdg bdg-b">'+esc(r.cliente)+'</span>':'&#8212;')+'</td>'+
+      '<td style="font-size:12px;color:#666">'+(orari||'&#8212;')+'</td>'+
+      '<td><b>'+(r.ore_tot||0).toFixed(1)+'h</b></td>'+
+      '<td>'+((r.ore_stra||0)>0?'<span class="bdg bdg-a">+'+r.ore_stra.toFixed(1)+'h</span>':'&#8212;')+'</td>'+
+      '<td>'+(r.km?r.km+' km':'&#8212;')+'</td>'+
+      '<td style="font-size:12px">'+labelTrasf(r.trasferte)+'</td>'+
+      '<td>'+assenze+'</td>'+
+      '<td onclick="event.stopPropagation()"><button class="btn btn-s btn-d" onclick="elimina('+idx+')">&#10005;</button></td>'+
+    '</tr>';
+  });
+  body.innerHTML=html;
+}
+
+
+
+
+function elimina(idx) {
+  if(!confirm('Eliminare questo record?')) return;
+  var d=db(); d.splice(idx,1); saveDb(d);
+  renderLista(); renderStats(); aggiornaHome();
+}
+
+function renderRiepilogo() {
+  var anno=document.getElementById('selAnno').value;
+  var d=db(); var html=''; var hasData=false;
+  for(var mi=0;mi<12;mi++){
+    var key=anno+'-'+String(mi+1).padStart(2,'0');
+    var rows=d.filter(function(r){ return r.data&&r.data.startsWith(key); });
+    var giorni=0,oreTot=0,oreOrd=0,oreStra=0,kmTot=0,assenzeTot=0;
+    rows.forEach(function(r){
+      var d2=new Date(r.data+'T12:00:00'); var dow=d2.getDay();
+      if((dow===0||dow===6) && (r.ore_stra||0)===0) return; // sab/dom senza straord: salta
+      if((r.ore_tot||0)>0||(r.malattia||0)>0||(r.ferie||0)>0) giorni++;
+      oreTot+=r.ore_tot||0; oreOrd+=r.ore_ord||0; oreStra+=r.ore_stra||0;
+      kmTot+=r.km||0; assenzeTot+=(r.malattia||0)+(r.ferie||0)+(r.permessi||0);
+    });
+    if(!giorni){ html+='<tr><td style="color:#bbb">'+MESI[mi]+'</td><td colspan="6" style="color:#ddd">—</td></tr>'; continue; }
+    hasData=true;
+    html+='<tr class="rie-row-clickable" data-mese="'+key+'" style="cursor:pointer">'+
+      '<td><b>'+MESI[mi]+'</b> <span style="font-size:11px;color:#b4b2a9">&#8599;</span></td>'+
+      '<td>'+giorni+'</td>'+
+      '<td><b>'+oreTot.toFixed(1)+'h</b></td>'+
+      '<td>'+oreOrd.toFixed(1)+'h</td>'+
+      '<td><span class="bdg bdg-a">'+oreStra.toFixed(1)+'h</span></td>'+
+      '<td>'+kmTot+' km</td>'+
+      '<td>'+(assenzeTot>0?assenzeTot+'h':'—')+'</td>'+
+    '</tr>';
+  }
+  document.getElementById('tbodyRie').innerHTML=html;
+  document.getElementById('emptyRie').style.display=hasData?'none':'block';
+  // aggancia click tramite delegation su tbody
+  document.getElementById('tbodyRie').onclick = function(e) {
+    var tr = e.target.closest('tr');
+    if(tr && tr.dataset.mese) apriMeseRiepilogo(tr.dataset.mese);
+  };
+}
+
+function apriMeseRiepilogo(meseKey) {
+  document.getElementById('filtMese').value = meseKey;
+  document.getElementById('filtCliente').value = '';
+  subView('reg');
+  renderLista();
+}
+
+// ── RIEPILOGO TRASFERTE ──
+function calcolaRiepilogo() {
+  var dataDa=document.getElementById('filtTrasfDa').value;
+  var dataA=document.getElementById('filtTrasfA').value;
+  var c=cfg();
+  // se nessun filtro data → usa mese corrente di default
+  if(!dataDa && !dataA) {
+    var now = new Date();
+    var primoGiorno = new Date(now.getFullYear(), now.getMonth(), 1);
+    var ultimoGiorno = new Date(now.getFullYear(), now.getMonth()+1, 0);
+    dataDa = primoGiorno.toISOString().split('T')[0];
+    dataA  = ultimoGiorno.toISOString().split('T')[0];
+    document.getElementById('filtTrasfDa').value = dataDa;
+    document.getElementById('filtTrasfA').value  = dataA;
+  }
+  var records=db().filter(function(r){ return (!dataDa||r.data>=dataDa)&&(!dataA||r.data<=dataA); });
+  var cP=0,cC=0,nP=0,nC=0,eP=0,eC=0,spP=0,spC=0,totKm=0;
+  records.forEach(function(r){
+    var t=r.trasferte;
+    if(t && typeof t === 'object') {
+      if(t.clientePranzo) cP++; if(t.clienteCena) cC++;
+      if(t.nostroPranzo)  nP++; if(t.nostroCena)  nC++;
+      if(t.esteroPranzo)  eP++; if(t.esteroCena)  eC++;
+    } else if(typeof t === 'number' && t > 0) {
+      nP++; // vecchio formato: trasferta a nostro carico generica
+    }
+    spP+=r.spesa_pranzo||0; spC+=r.spesa_cena||0; totKm+=r.km||0;
+  });
+  var tCP=cP*c.rimborso_cliente_pranzo, tCC=cC*c.rimborso_cliente_cena;
+  var tNP=nP*c.rimborso_nostro_pranzo,  tNC=nC*c.rimborso_nostro_cena;
+  var tEP=eP*(c.rimborso_estero_pranzo||40), tEC=eC*(c.rimborso_estero_cena||50);
+  var totCli=tCP+tCC, totNos=tNP+tNC, totEst=tEP+tEC, totTrasf=totCli+totNos+totEst;
+
+    document.getElementById('riepilogoTrasferte').innerHTML =
+    '<div class="sec-lbl" style="margin-top:0">Italia</div>' +
+    '<div class="stats">' +
+      '<div class="stat"><div class="stat-l">Pranzi Cli.</div><div class="stat-v">' + cP + '</div><div class="stat-s">' + tCP.toFixed(2) + ' €</div></div>' +
+      '<div class="stat"><div class="stat-l">Cene Cli.</div><div class="stat-v">' + cC + '</div><div class="stat-s">' + tCC.toFixed(2) + ' €</div></div>' +
+      '<div class="stat"><div class="stat-l">Pranzi Nos.</div><div class="stat-v">' + nP + '</div><div class="stat-s">' + tNP.toFixed(2) + ' €</div></div>' +
+      '<div class="stat"><div class="stat-l">Cene Nos.</div><div class="stat-v">' + nC + '</div><div class="stat-s">' + tNC.toFixed(2) + ' €</div></div>' +
+    '</div>' +
+    '<div class="sec-lbl">Estero</div>' +
+    '<div class="stats">' +
+      '<div class="stat"><div class="stat-l">Pranzi Estero</div><div class="stat-v">' + eP + '</div><div class="stat-s">' + tEP.toFixed(2) + ' €</div></div>' +
+      '<div class="stat"><div class="stat-l">Cene Estero</div><div class="stat-v">' + eC + '</div><div class="stat-s">' + tEC.toFixed(2) + ' €</div></div>' +
+    '</div>' +
+    '<div class="res-row"><span>Rimborsi Italia (Cliente)</span><span><b>' + totCli.toFixed(2) + ' €</b></span></div>' +
+    '<div class="res-row"><span>Rimborsi Italia (Nostro)</span><span><b>' + totNos.toFixed(2) + ' €</b></span></div>' +
+    '<div class="res-row"><span>Rimborsi Estero</span><span><b>' + totEst.toFixed(2) + ' €</b></span></div>' +
+    '<div class="res-row res-tot"><span><b>Totale Trasferte</b></span><span><b>' + totTrasf.toFixed(2) + ' €</b></span></div>';
+
+  var totSpese=spP+spC;
+  document.getElementById('riepilogoSpese').innerHTML=
+    '<div class="stats">'+
+      '<div class="stat"><div class="stat-l">Spesa Pranzo</div><div class="stat-v">'+spP.toFixed(2)+' €</div></div>'+
+      '<div class="stat"><div class="stat-l">Spesa Cena</div><div class="stat-v">'+spC.toFixed(2)+' €</div></div>'+
+    '</div>'+
+    '<div class="res-row"><span>Totale Spese Effettive</span><span><b>'+totSpese.toFixed(2)+' €</b></span></div>';
+
+  document.getElementById('totaleKm').innerHTML=
+    '<div class="res-row"><span><b>📊 Totale KM percorsi</b></span><span><b>'+totKm+' km</b></span></div>';
+
+  var netto=totTrasf-totSpese;
+
+  // ── Torta Azienda vs Fuori ──
+  var giorniTot = records.filter(function(r){
+    return (r.ore_tot||0)>0 || (r.malattia||0)>0 || (r.ferie||0)>0 || (r.permessi||0)>0;
+  }).length;
+  var giornaFuori = records.filter(function(r){
+    var t = r.trasferte;
+    if(!t) return false;
+    if(typeof t==='number') return t>0;
+    return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena;
+  }).length;
+  var giorniAzienda = giorniTot - giornaFuori;
+  var pieWrap = document.getElementById('trasfPieWrap');
+  if(window.Chart && giorniTot > 0){
+    pieWrap.style.display='block';
+    var ctxPie = document.getElementById('chartTrasfPie').getContext('2d');
+    if(chartTrasfPieInst) chartTrasfPieInst.destroy();
+    chartTrasfPieInst = new Chart(ctxPie, {
+      type: 'pie',
+      data: {
+        labels: ['In azienda', 'Fuori sede'],
+        datasets: [{ data: [giorniAzienda, giornaFuori], backgroundColor: ['#4a90d9','#f0a500'], hoverOffset: 6 }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: { callbacks: { label: function(ctx){ return ctx.label+': '+ctx.raw+' gg'; } } }
+        }
+      }
+    });
+    document.getElementById('trasfPieLegend').innerHTML =
+      '<span style="color:#4a90d9;font-weight:700">'+giorniAzienda+'</span> in azienda &nbsp;·&nbsp; '+
+      '<span style="color:#f0a500;font-weight:700">'+giornaFuori+'</span> fuori sede &nbsp;·&nbsp; '+
+      '<span style="color:#5f5e5a">'+giorniTot+' tot</span>';
+  } else {
+    if(pieWrap) pieWrap.style.display = giorniTot>0 ? 'block' : 'none';
+  }
+  document.getElementById('totaleComplessivo').innerHTML=
+    '<div class="busta-final"><div class="res-row" style="border:none"><span><b>Trasferte − Spese Effettive</b></span><span><b>'+netto.toFixed(2)+' €</b></span></div></div>';
+}
+function popolaTrasfMesi() {
+  var sel = document.getElementById('trasfMeseRapido');
+  var mesiPresenti = {};
+  db().forEach(function(r){ if(r.data) mesiPresenti[r.data.slice(0,7)] = true; });
+  var mesiOrd = Object.keys(mesiPresenti).sort().reverse();
+  sel.innerHTML = '<option value="">— scegli un mese —</option>';
+  mesiOrd.forEach(function(m){
+    var p = m.split('-');
+    var lbl = MESI[parseInt(p[1])-1] + ' ' + p[0];
+    sel.innerHTML += '<option value="'+m+'">'+lbl+'</option>';
+  });
+}
+
+function selezionaMeseTrasferte() {
+  var val = document.getElementById('trasfMeseRapido').value;
+  if(!val) return;
+  var p = val.split('-');
+  var primo  = new Date(parseInt(p[0]), parseInt(p[1])-1, 1);
+  var ultimo = new Date(parseInt(p[0]), parseInt(p[1]), 0);
+  document.getElementById('filtTrasfDa').value = primo.toISOString().split('T')[0];
+  document.getElementById('filtTrasfA').value  = ultimo.toISOString().split('T')[0];
+  calcolaRiepilogo();
+}
+
+function resetFiltriTrasf() {
+  document.getElementById('filtTrasfDa').value='';
+  document.getElementById('filtTrasfA').value='';
+  document.getElementById('trasfMeseRapido').value='';
+  calcolaRiepilogo();
+}
+
+// ── BUSTA PAGA ──
+function calcolaBusta() {
+  var mese = document.getElementById('bustaMese').value;
+  if(!mese) return;
+  var records = db().filter(function(r){ return r.manuale && r.data && r.data.startsWith(mese); });
+  var cf = cfg();
+
+  var totOrd=0, totStra=0, totAssenze=0, totPermessi=0, spP=0, spC=0;
+  var cP=0, cC=0, nP=0, nC=0, eP=0, eC=0;
+  var giorniLav=0;
+
+  records.forEach(function(r){
+    var oreTot = r.ore_tot || 0;
+    if(oreTot > 0) giorniLav++;
+
+    totOrd  += r.ore_ord  || 0;
+    totStra += r.ore_stra || 0;
+    totAssenze += (r.malattia||0) + (r.ferie||0);
+    totPermessi+= r.permessi || 0;
+    spP        += r.spesa_pranzo || 0;
+    spC        += r.spesa_cena   || 0;
+    var t = r.trasferte;
+    if(t && typeof t === 'object') {
+      if(t.clientePranzo) cP++; if(t.clienteCena) cC++;
+      if(t.nostroPranzo)  nP++; if(t.nostroCena)  nC++;
+      if(t.esteroPranzo)  eP++; if(t.esteroCena)  eC++;
+    } else if(typeof t === 'number' && t > 0) {
+      nP++;
+    }
+  });
+
+  // ── Calcolo rimborsi trasferte con tetto fiscale ──
+  var tetto = cf.tetto_trasferte || 40; // € esenti per giorno di trasferta
+
+  // Calcola importo e tassazione per ogni giorno di trasferta
+  // Per ogni giorno con trasferta: min(importo, tetto) = esente; max(0, importo-tetto) = tassabile
+  var rimTotEsente = 0, rimTotTassabile = 0;
+
+  function calcolaFisco(n, tariffa) {
+    // n = numero di pasti, tariffa = € a pasto
+    // ogni pasto in un giorno conta separatamente? No: si calcola per giornata
+    // Qui sommiamo i rimborsi e poi applichiamo il tetto per giornata
+    return n * tariffa;
+  }
+
+  // Rimborso lordo per categoria
+  var rimCliP = cP * (cf.rimborso_cliente_pranzo||0);
+  var rimCliC = cC * (cf.rimborso_cliente_cena||0);
+  var rimNosP = nP * (cf.rimborso_nostro_pranzo||0);
+  var rimNosC = nC * (cf.rimborso_nostro_cena||0);
+  var rimEstP = eP * (cf.rimborso_estero_pranzo||0);
+  var rimEstC = eC * (cf.rimborso_estero_cena||0);
+
+  var rimCli = rimCliP + rimCliC;
+  var rimNos = rimNosP + rimNosC;
+  var rimEst = rimEstP + rimEstC;
+  var totTrasf = rimCli + rimNos + rimEst;
+  var nTrasf = cP + cC + nP + nC + eP + eC;
+
+  // Numero giorni con almeno una trasferta
+  var giorniConTrasf = records.filter(function(r){
+    var t = r.trasferte;
+    if(!t) return false;
+    if(typeof t === 'number') return t > 0;
+    return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena;
+  }).length;
+
+  // Per ogni giorno con trasferta: esente fino a tetto, tassabile l'eccedenza
+  var esentePerGiorno = giorniConTrasf > 0 ? Math.min(totTrasf / giorniConTrasf, tetto) : 0;
+  var totEsente     = esentePerGiorno * giorniConTrasf;
+  var totTassabile  = Math.max(0, totTrasf - totEsente);
+
+  // importi
+  var impOrd  = totOrd      * (cf.paga      || 0);
+  var impStra = totStra     * (cf.paga_stra || 0);
+  var impAss  = totAssenze  * (cf.paga      || 0);
+  var impPerm = totPermessi * (cf.paga      || 0);
+  // Il lordo include le trasferte tassabili (le esenti non concorrono al reddito)
+  var lordo   = impOrd + impStra + impAss + impPerm + totTassabile;
+  var inps    = lordo * ((cf.inps  || 0) / 100);
+  var irpef   = (lordo - inps) * ((cf.irpef || 0) / 100);
+  var netto   = lordo - inps - irpef + totEsente; // aggiungi le esenti al netto finale
+  var spese   = spP + spC;
+  var nettoSpese = netto - spese;
+
+  var mesiNomi = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  var mp = mese.split('-');
+  var meseLbl = mesiNomi[parseInt(mp[1])-1] + ' ' + mp[0];
+
+  // ── Premio produttività trimestrale ──
+  // Attivo a marzo(3), giugno(6), settembre(9), dicembre(12)
+  var meseNum = parseInt(mp[1]);
+  var annoNum = parseInt(mp[0]);
+  var premioProdOre = 0, premioProdImporto = 0, premioMesi = [];
+  var mesiTrimestre = [];
+  if(meseNum === 3)  mesiTrimestre = [annoNum+'-01', annoNum+'-02', annoNum+'-03'];
+  if(meseNum === 6)  mesiTrimestre = [annoNum+'-04', annoNum+'-05', annoNum+'-06'];
+  if(meseNum === 9)  mesiTrimestre = [annoNum+'-07', annoNum+'-08', annoNum+'-09'];
+  if(meseNum === 12) mesiTrimestre = [annoNum+'-10', annoNum+'-11', annoNum+'-12'];
+
+  if(mesiTrimestre.length > 0 && (cf.premio_produttivita||0) > 0) {
+    var allRecords = db().filter(function(r){ return r.manuale && r.data; });
+    mesiTrimestre.forEach(function(m){
+      var recs = allRecords.filter(function(r){ return r.data.startsWith(m); });
+      var oreM = recs.reduce(function(s,r){ return s+(r.ore_ord||0)+(r.ore_stra||0); }, 0);
+      premioProdOre += oreM;
+      premioMesi.push({ mese: mesiNomi[parseInt(m.split('-')[1])-1], ore: oreM });
+    });
+    premioProdImporto = premioProdOre * (cf.premio_produttivita||0);
+  }
+
+  document.getElementById('bustaRisultato').innerHTML =
+    '<div style="font-size:13px;color:#888780;margin-bottom:14px;font-weight:500">Riepilogo ' + meseLbl + ' — ' + giorniLav + ' giorni lavorati</div>' +
+
+    '<div class="sec-lbl">Dettaglio ore</div>' +
+    '<div class="stats" style="margin-bottom:14px">' +
+      '<div class="stat"><div class="stat-l">Ore ord.</div><div class="stat-v">' + totOrd.toFixed(1) + 'h</div><div class="stat-s">' + impOrd.toFixed(2) + ' €</div></div>' +
+      '<div class="stat"><div class="stat-l">Straord.</div><div class="stat-v">' + totStra.toFixed(1) + 'h</div><div class="stat-s">' + impStra.toFixed(2) + ' €</div></div>' +
+      (totAssenze > 0 ? '<div class="stat"><div class="stat-l">Assenze</div><div class="stat-v">' + totAssenze.toFixed(0) + 'h</div><div class="stat-s">' + impAss.toFixed(2) + ' €</div></div>' : '') +
+      (totPermessi > 0 ? '<div class="stat"><div class="stat-l">Permessi</div><div class="stat-v">' + totPermessi.toFixed(1) + 'h</div><div class="stat-s">' + impPerm.toFixed(2) + ' €</div></div>' : '') +
+    '</div>' +
+
+    (nTrasf > 0 ?
+      '<div class="sec-lbl">Trasferte</div>' +
+      '<div class="stats" style="margin-bottom:8px">' +
+        (cP||cC ? '<div class="stat"><div class="stat-l">Italia Cliente</div><div class="stat-v">' + (cP+cC) + '</div><div class="stat-s">' + rimCli.toFixed(2) + ' €</div></div>' : '') +
+        (nP||nC ? '<div class="stat"><div class="stat-l">Italia Nostro</div><div class="stat-v">' + (nP+nC) + '</div><div class="stat-s">' + rimNos.toFixed(2) + ' €</div></div>' : '') +
+        (eP||eC ? '<div class="stat"><div class="stat-l">Estero</div><div class="stat-v">' + (eP+eC) + '</div><div class="stat-s">' + rimEst.toFixed(2) + ' €</div></div>' : '') +
+      '</div>' +
+      '<div class="res-row"><span>Totale rimborsi trasferte</span><span><b>' + totTrasf.toFixed(2) + ' €</b></span></div>' +
+      '<div style="background:#eaf3de;border-radius:8px;padding:10px 14px;margin:6px 0;display:flex;justify-content:space-between;align-items:center">' +
+        '<span style="font-size:13px;color:#3b6d11"><b>Tax 0%</b> &nbsp;Quota esente (max ' + tetto.toFixed(0) + '€/gg)</span>' +
+        '<span style="font-size:14px;font-weight:700;color:#3b6d11">' + totEsente.toFixed(2) + ' €</span>' +
+      '</div>' +
+      (totTassabile > 0 ?
+        '<div style="background:#faeeda;border-radius:8px;padding:10px 14px;margin:6px 0;display:flex;justify-content:space-between;align-items:center">' +
+          '<span style="font-size:13px;color:#854f0b"><b>Tassata</b> &nbsp;Eccedenza tetto (' + tetto.toFixed(0) + '€/gg)</span>' +
+          '<span style="font-size:14px;font-weight:700;color:#854f0b">' + totTassabile.toFixed(2) + ' €</span>' +
+        '</div>'
+      : '') +
+      '<div style="height:4px"></div>'
+    : '') +
+
+    '<div class="sec-lbl">Calcolo stipendio</div>' +
+    '<div class="res-row"><span>Ore ordinarie (' + totOrd.toFixed(1) + 'h × ' + (cf.paga||0).toFixed(2) + ' €)</span><span>' + impOrd.toFixed(2) + ' €</span></div>' +
+    (totStra > 0 ? '<div class="res-row"><span>Straordinari (' + totStra.toFixed(1) + 'h × ' + (cf.paga_stra||0).toFixed(2) + ' €)</span><span>' + impStra.toFixed(2) + ' €</span></div>' : '') +
+    (totAssenze > 0 ? '<div class="res-row"><span>Assenze (' + totAssenze.toFixed(0) + 'h)</span><span>' + impAss.toFixed(2) + ' €</span></div>' : '') +
+    (totPermessi > 0 ? '<div class="res-row"><span>Permessi (' + totPermessi.toFixed(1) + 'h)</span><span>' + impPerm.toFixed(2) + ' €</span></div>' : '') +
+    (nTrasf > 0 ? '<div class="res-row"><span>Rimborsi trasferte</span><span>' + totTrasf.toFixed(2) + ' €</span></div>' : '') +
+    '<div class="res-row" style="border-top:1.5px solid #e0e0e0;margin-top:6px;padding-top:10px"><span><b>Totale Lordo</b></span><span><b>' + lordo.toFixed(2) + ' €</b></span></div>' +
+    '<div class="res-row"><span>INPS (' + (cf.inps||0) + '%)</span><span style="color:#a32d2d">− ' + inps.toFixed(2) + ' €</span></div>' +
+    '<div class="res-row"><span>IRPEF (' + (cf.irpef||0) + '%)</span><span style="color:#a32d2d">− ' + irpef.toFixed(2) + ' €</span></div>' +
+    '<div class="busta-highlight" style="margin-top:10px"><div class="res-row" style="border:none"><span><b>Stimato Netto in Busta</b></span><span><b>' + netto.toFixed(2) + ' €</b></span></div></div>' +
+
+    (premioProdImporto > 0 ?
+      '<div style="background:#f0f7e6;border:1.5px solid #7cb342;border-radius:10px;padding:14px 16px;margin-top:12px">' +
+        '<div style="font-size:11px;font-weight:700;color:#3b6d11;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">🏆 Premio Produttività Trimestrale</div>' +
+        '<div style="font-size:12px;color:#5f5e5a;margin-bottom:8px">' +
+          premioMesi.map(function(m){ return m.mese+': <b>'+m.ore.toFixed(1)+'h</b>'; }).join(' &nbsp;·&nbsp; ') +
+        '</div>' +
+        '<div class="res-row" style="border-color:#c5e1a5"><span>Ore totali trimestre</span><span><b>' + premioProdOre.toFixed(1) + 'h</b></span></div>' +
+        '<div class="res-row" style="border-color:#c5e1a5"><span>Premio ('+premioProdOre.toFixed(1)+'h × '+(cf.premio_produttivita||0).toFixed(2)+' €)</span><span><b style="color:#3b6d11">+ ' + premioProdImporto.toFixed(2) + ' €</b></span></div>' +
+        '<div style="border-top:1px solid #a5d6a7;margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">' +
+          '<span style="font-weight:700;color:#1a1a18;font-size:14px">Netto + Premio</span>' +
+          '<span style="font-weight:700;color:#3b6d11;font-size:18px">' + (netto + premioProdImporto).toFixed(2) + ' €</span>' +
+        '</div>' +
+      '</div>'
+    : '') +
+    (spese > 0 ?
+      '<div class="res-row" style="margin-top:10px"><span>Spese pasto effettive (pranzo+cena)</span><span style="color:#a32d2d">− ' + spese.toFixed(2) + ' €</span></div>' +
+      '<div class="busta-final"><div class="res-row" style="border:none"><span><b>Netto − Spese</b></span><span><b>' + nettoSpese.toFixed(2) + ' €</b></span></div></div>'
+    : '') +
+    (lordo === 0 ? '<div class="empty">Nessun dato per questo mese.<br>Verifica le impostazioni (paga oraria, ecc.)</div>' : '');
+
+  // ── SEZIONE PREVENTIVO ──
+  calcolaPreventivo(mese, cf, totOrd, totStra, cP, cC, nP, nC, eP, eC, totAssenze, totPermessi, records);
+}
+
+function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, eC, assenzeGia, permessiGia, records) {
+  var oggi = new Date();
+  var mp = mese.split('-');
+  var annoMese = parseInt(mp[0]), meseMese = parseInt(mp[1]) - 1;
+  var meseCorrente = (oggi.getFullYear() === annoMese && oggi.getMonth() === meseMese);
+
+  // giorni lavorativi totali del mese (lun-ven, esclusi festivi nazionali)
+  var FESTIVI_FISSI_B = ['01-01','01-06','04-25','05-01','06-02','08-15','11-01','12-08','12-25','12-26'];
+  function getEasterB(year) {
+    var a=year%19,b=Math.floor(year/100),c=year%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25);
+    var g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7;
+    var m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;
+    return new Date(year,month-1,day);
+  }
+  var easterB = getEasterB(annoMese);
+  var easterBStr = easterB.toISOString().slice(0,10);
+  var easterMondayB = new Date(easterB); easterMondayB.setDate(easterB.getDate()+1);
+  var easterMondayBStr = easterMondayB.toISOString().slice(0,10);
+  function isFestivoBusta(dateStr) {
+    var mmdd = dateStr.slice(5);
+    if(FESTIVI_FISSI_B.indexOf(mmdd) !== -1) return true;
+    if(dateStr === easterBStr || dateStr === easterMondayBStr) return true;
+    return false;
+  }
+
+  var totLavMese = 0, rimanenti = 0;
+  var ultimo = new Date(annoMese, meseMese + 1, 0).getDate();
+  for(var g = 1; g <= ultimo; g++) {
+    var dataStr = annoMese + '-' + String(meseMese+1).padStart(2,'0') + '-' + String(g).padStart(2,'0');
+    var gg = new Date(annoMese, meseMese, g).getDay();
+    if(gg >= 1 && gg <= 5 && !isFestivoBusta(dataStr)) {
+      totLavMese++;
+      if(meseCorrente && new Date(annoMese, meseMese, g) > oggi) rimanenti++;
+    }
+  }
+  // se mese passato → rimanenti = 0, se futuro → tutti rimanenti
+  if(!meseCorrente) {
+    rimanenti = (annoMese > oggi.getFullYear() || (annoMese === oggi.getFullYear() && meseMese > oggi.getMonth())) ? totLavMese : 0;
+  }
+
+  // giorni lavorativi effettivamente registrati nel DB per questo mese
+  var giorniGia = records.filter(function(r){
+    return (r.ore_tot||0) > 0 || (r.malattia||0) > 0 || (r.ferie||0) > 0;
+  }).length;
+
+  // giorni rimanenti = totale lun-ven del mese - giorni già registrati
+  var giorniRimanenti = Math.max(0, totLavMese - giorniGia);
+
+  // Ore stimate per i giorni RIMANENTI (solo lun-ven, 8h std)
+  var oreRimanenti = giorniRimanenti * (cf.ore_std || 8);
+  var mediaCP = giorniGia > 0 ? cP / giorniGia : 0;
+  var mediaNP = giorniGia > 0 ? nP / giorniGia : 0;
+  var mediaNC = giorniGia > 0 ? nC / giorniGia : 0;
+  var mediaEP = giorniGia > 0 ? eP / giorniGia : 0;
+
+  // Trasferte stimate per i giorni rimanenti
+  var rimStimati = (Math.round(mediaCP * giorniRimanenti) * (cf.rimborso_cliente_pranzo||0)) +
+                   (Math.round(mediaNP * giorniRimanenti) * (cf.rimborso_nostro_pranzo||0)) +
+                   (Math.round(mediaNC * giorniRimanenti) * (cf.rimborso_nostro_cena||0)) +
+                   (Math.round(mediaEP * giorniRimanenti) * (cf.rimborso_estero_pranzo||0));
+
+  // Importi SOLO delle ore/trasferte rimanenti stimate
+  var impOrdRim   = oreRimanenti * (cf.paga || 0);
+  var lordoRim    = impOrdRim + rimStimati;
+  var inpsRim     = lordoRim * ((cf.inps  || 0) / 100);
+  var irpefRim    = (lordoRim - inpsRim) * ((cf.irpef || 0) / 100);
+  var nettoRim    = lordoRim - inpsRim - irpefRim;
+
+  // Totale a fine mese = consuntivo già calcolato + stima rimanente
+  // (il consuntivo viene passato già calcolato in calcolaBusta)
+  // Per mostrare il totale, recuperiamo il netto del consuntivo dal DOM
+  var nettoPrev = nettoRim; // mostriamo solo il contributo dei giorni rimanenti
+
+  var el = document.getElementById('bustaPreventivo');
+  if(!el) return;
+
+  var fineDelMese = new Date(annoMese, meseMese + 1, 0);
+  var mesePasato  = oggi > fineDelMese;
+  var meseFuturo  = (annoMese > oggi.getFullYear() || (annoMese === oggi.getFullYear() && meseMese > oggi.getMonth()));
+
+  // ── MESE PASSATO ──
+  if(mesePasato) {
+    if(giorniRimanenti <= 0) {
+      el.innerHTML = '<div style="text-align:center;padding:16px;color:#3b6d11;font-size:14px;">✅ Mese completato — tutti i giorni lavorativi sono stati inseriti.</div>';
+      return;
+    }
+    // Giorni mancanti: calcola stima
+    var oreStdMancanti = giorniRimanenti * (cf.ore_std || 8);
+    var impOrdMancanti = oreStdMancanti * (cf.paga || 0);
+
+    var impOrdGia2  = oreOrdGia  * (cf.paga      || 0);
+    var impStraGia2 = oreStraGia * (cf.paga_stra || 0);
+    var impAssGia2  = assenzeGia * (cf.paga      || 0);
+    var impPermGia2 = permessiGia* (cf.paga      || 0);
+    var rimGiaTot   = (cP*(cf.rimborso_cliente_pranzo||0))+(cC*(cf.rimborso_cliente_cena||0))+
+                      (nP*(cf.rimborso_nostro_pranzo||0)) +(nC*(cf.rimborso_nostro_cena||0))+
+                      (eP*(cf.rimborso_estero_pranzo||0)) +(eC*(cf.rimborso_estero_cena||0));
+    var tetto2 = cf.tetto_trasferte || 40;
+    var giorniConTrasf2 = records.filter(function(r){
+      var t=r.trasferte; if(!t) return false;
+      if(typeof t==='number') return t>0;
+      return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena;
+    }).length;
+    var esente2    = giorniConTrasf2 > 0 ? Math.min(rimGiaTot/giorniConTrasf2, tetto2)*giorniConTrasf2 : 0;
+    var tassabile2 = Math.max(0, rimGiaTot - esente2);
+    var lordoGia2  = impOrdGia2 + impStraGia2 + impAssGia2 + impPermGia2 + tassabile2;
+    var inpsGia2   = lordoGia2 * ((cf.inps||0)/100);
+    var irpefGia2  = (lordoGia2 - inpsGia2) * ((cf.irpef||0)/100);
+    var nettoGia2  = lordoGia2 - inpsGia2 - irpefGia2 + esente2;
+
+    var lordoTotM  = lordoGia2 + impOrdMancanti;
+    var inpsTotM   = lordoTotM * ((cf.inps||0)/100);
+    var irpefTotM  = (lordoTotM - inpsTotM) * ((cf.irpef||0)/100);
+    var nettoTotM  = lordoTotM - inpsTotM - irpefTotM + esente2;
+
+    el.innerHTML =
+      '<div style="background:#fff8e1;border:1.5px solid #f5c842;border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start">' +
+        '<span style="font-size:20px">⚠️</span>' +
+        '<div>' +
+          '<div style="font-weight:600;font-size:13px;color:#7a5700;margin-bottom:4px">Mese incompleto — ' + giorniRimanenti + ' giorn' + (giorniRimanenti===1?'o':'i') + ' lavorativ' + (giorniRimanenti===1?'o':'i') + ' non inserit' + (giorniRimanenti===1?'o':'i') + '</div>' +
+          '<div style="font-size:12px;color:#9a7010">Il consuntivo sopra si basa sui ' + giorniGia + ' giorni registrati.<br>Sotto trovi una stima con i ' + giorniRimanenti + ' giorni mancanti a <b>' + (cf.ore_std||8) + 'h/giorno</b>.</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="background:#f9f8f5;border-radius:10px;padding:14px 16px;margin-bottom:10px">' +
+        '<div style="font-size:11px;font-weight:600;color:#5f5e5a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Già inserito (' + giorniGia + ' giorni)</div>' +
+        '<div class="stats" style="margin-bottom:0">' +
+          '<div class="stat"><div class="stat-l">Ore inserite</div><div class="stat-v">' + (oreOrdGia+oreStraGia).toFixed(1) + 'h</div></div>' +
+          '<div class="stat"><div class="stat-l">Netto reale</div><div class="stat-v" style="color:#3b6d11">' + nettoGia2.toFixed(2) + ' €</div></div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="background:#fff3cd;border-radius:10px;padding:14px 16px;margin-bottom:10px;border:1px dashed #f5c842">' +
+        '<div style="font-size:11px;font-weight:600;color:#7a5700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">+ Giorni mancanti stimati (' + giorniRimanenti + ' × ' + (cf.ore_std||8) + 'h)</div>' +
+        '<div class="stats" style="margin-bottom:0">' +
+          '<div class="stat"><div class="stat-l">Ore stimate</div><div class="stat-v">' + oreStdMancanti.toFixed(0) + 'h</div></div>' +
+          '<div class="stat"><div class="stat-l">Importo stimato</div><div class="stat-v">' + impOrdMancanti.toFixed(2) + ' €</div></div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="background:#1a1a18;border-radius:10px;padding:16px 18px">' +
+        '<div style="font-size:11px;font-weight:600;color:#888780;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Totale mese stimato</div>' +
+        '<div class="res-row" style="border-color:#333"><span style="color:#aaa">Lordo totale</span><span style="color:#f5f4f0"><b>' + lordoTotM.toFixed(2) + ' €</b></span></div>' +
+        '<div class="res-row" style="border-color:#333"><span style="color:#a87">INPS (' + (cf.inps||0) + '%)</span><span style="color:#e09090">− ' + inpsTotM.toFixed(2) + ' €</span></div>' +
+        '<div class="res-row" style="border-color:#333"><span style="color:#a87">IRPEF (' + (cf.irpef||0) + '%)</span><span style="color:#e09090">− ' + irpefTotM.toFixed(2) + ' €</span></div>' +
+        '<div style="border-top:1px solid #444;margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">' +
+          '<span style="color:#f5f4f0;font-weight:600;font-size:14px">Netto stimato totale</span>' +
+          '<span style="color:#f5c842;font-size:20px;font-weight:700">' + nettoTotM.toFixed(2) + ' €</span>' +
+        '</div>' +
+      '</div>' +
+      '<div style="font-size:11px;color:#b4b2a9;margin-top:8px;text-align:center">* Stima a ' + (cf.ore_std||8) + 'h/giorno per i giorni mancanti. Nessuna trasferta stimata.</div>';
+    return;
+  }
+
+  // ── MESE FUTURO ──
+  if(meseFuturo) {
+    var impOrdFut = oreRimanenti * (cf.paga || 0);
+    var lordoFut  = impOrdFut;
+    var inpsFut   = lordoFut * ((cf.inps||0)/100);
+    var irpefFut  = (lordoFut - inpsFut) * ((cf.irpef||0)/100);
+    var nettoFut  = lordoFut - inpsFut - irpefFut;
+    el.innerHTML =
+      '<div style="background:#e6f1fb;border-radius:10px;padding:14px 16px;margin-bottom:10px">' +
+        '<div style="font-size:11px;font-weight:600;color:#185fa5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Previsione mese futuro</div>' +
+        '<div class="stats" style="margin-bottom:10px">' +
+          '<div class="stat"><div class="stat-l">Giorni lav.</div><div class="stat-v">' + giorniRimanenti + '</div></div>' +
+          '<div class="stat"><div class="stat-l">Ore previste</div><div class="stat-v">' + oreRimanenti.toFixed(0) + 'h</div><div class="stat-s">' + giorniRimanenti + ' × ' + (cf.ore_std||8) + 'h</div></div>' +
+          '<div class="stat"><div class="stat-l">Netto stimato</div><div class="stat-v" style="color:#185fa5">' + nettoFut.toFixed(2) + ' €</div></div>' +
+        '</div>' +
+        '<div style="font-size:11px;color:#5f8ab4">Solo ore ordinarie. Straordinari e trasferte non stimati.</div>' +
+      '</div>';
+    return;
+  }
+
+  // ── MESE CORRENTE ──
+
+  var tetto2 = cf.tetto_trasferte || 40;
+
+  // Ricalcola consuntivo CON tetto fiscale (uguale a calcolaBusta)
+  var impOrdGia2  = oreOrdGia  * (cf.paga      || 0);
+  var impStraGia2 = oreStraGia * (cf.paga_stra || 0);
+  var impAssGia2  = assenzeGia * (cf.paga      || 0);
+  var impPermGia2 = permessiGia* (cf.paga      || 0);
+  var rimGiaTot   = (cP*(cf.rimborso_cliente_pranzo||0))+(cC*(cf.rimborso_cliente_cena||0))+
+                    (nP*(cf.rimborso_nostro_pranzo||0)) +(nC*(cf.rimborso_nostro_cena||0))+
+                    (eP*(cf.rimborso_estero_pranzo||0)) +(eC*(cf.rimborso_estero_cena||0));
+  // Applica tetto fiscale ai giorni già registrati
+  var giorniConTrasfGia = records.filter(function(r){
+    var t=r.trasferte; if(!t) return false;
+    if(typeof t==='number') return t>0;
+    return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena;
+  }).length;
+  var esenteGia    = giorniConTrasfGia > 0 ? Math.min(rimGiaTot/giorniConTrasfGia, tetto2)*giorniConTrasfGia : 0;
+  var tassabileGia = Math.max(0, rimGiaTot - esenteGia);
+  var lordoGia     = impOrdGia2 + impStraGia2 + impAssGia2 + impPermGia2 + tassabileGia;
+  var inpsGia      = lordoGia * ((cf.inps||0)/100);
+  var irpefGia     = (lordoGia - inpsGia) * ((cf.irpef||0)/100);
+  var nettoGia     = lordoGia - inpsGia - irpefGia + esenteGia;
+
+  // Stima consuntivo giorni rimanenti CON tetto fiscale
+  var rimStimatiTot = rimStimati; // già calcolato sopra
+  var giorniConTrasfRim = Math.round(
+    (giorniConTrasfGia > 0 ? giorniConTrasfGia/Math.max(giorniGia,1) : 0) * giorniRimanenti
+  );
+  var esenteRim    = giorniConTrasfRim > 0 ? Math.min(rimStimatiTot/Math.max(giorniConTrasfRim,1), tetto2)*giorniConTrasfRim : 0;
+  var tassabileRim = Math.max(0, rimStimatiTot - esenteRim);
+  var lordoRim2    = impOrdRim + tassabileRim;
+  var inpsRim2     = lordoRim2 * ((cf.inps||0)/100);
+  var irpefRim2    = (lordoRim2 - inpsRim2) * ((cf.irpef||0)/100);
+  var nettoRim2    = lordoRim2 - inpsRim2 - irpefRim2 + esenteRim;
+
+  // TOTALE FINE MESE = consuntivo + stima rimanenti (lordi sommati, poi tassa)
+  var lordoTotBase = (impOrdGia2+impStraGia2+impAssGia2+impPermGia2) + impOrdRim + tassabileGia + tassabileRim;
+  var esenteTot    = esenteGia + esenteRim;
+  var inpsTot      = lordoTotBase * ((cf.inps||0)/100);
+  var irpefTot     = (lordoTotBase - inpsTot) * ((cf.irpef||0)/100);
+  var nettoTot     = lordoTotBase - inpsTot - irpefTot + esenteTot;
+  var lordoTot     = lordoTotBase; // lordo tassabile (senza quota esente)
+  var oreTot       = (oreOrdGia + oreStraGia) + oreRimanenti;
+
+  // Spese pasto stimate per giorni rimanenti (media giornaliera)
+  var speseGia    = records.reduce(function(s,r){ return s+(r.spesa_pranzo||0)+(r.spesa_cena||0); }, 0);
+  var mediaSpese  = giorniGia > 0 ? speseGia / giorniGia : 0;
+  var speseRim    = mediaSpese * giorniRimanenti;
+  var speseTotal  = speseGia + speseRim;
+
+  el.innerHTML =
+    // Avviso giallo giorni rimanenti
+    '<div style="background:#fff8e1;border:1.5px solid #f5c842;border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start">' +
+      '<span style="font-size:20px">⚠️</span>' +
+      '<div>' +
+        '<div style="font-weight:600;font-size:13px;color:#7a5700;margin-bottom:4px">Mese in corso — ' + giorniRimanenti + ' giorn' + (giorniRimanenti===1?'o':'i') + ' lavorativ' + (giorniRimanenti===1?'o':'i') + ' rimanent' + (giorniRimanenti===1?'e':'i') + '</div>' +
+        '<div style="font-size:12px;color:#9a7010">Il consuntivo sopra si basa sui ' + giorniGia + ' giorni registrati.<br>Sotto trovi una stima con i ' + giorniRimanenti + ' giorni rimanenti a <b>' + (cf.ore_std||8) + 'h/giorno</b>.</div>' +
+      '</div>' +
+    '</div>' +
+
+    // Blocco A — già inserito (grigio)
+    '<div style="background:#f9f8f5;border-radius:10px;padding:14px 16px;margin-bottom:10px">' +
+      '<div style="font-size:11px;font-weight:600;color:#5f5e5a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Già inserito (' + giorniGia + ' giorni)</div>' +
+      '<div class="stats" style="margin-bottom:0">' +
+        '<div class="stat"><div class="stat-l">Ore inserite</div><div class="stat-v">' + (oreOrdGia+oreStraGia).toFixed(1) + 'h</div></div>' +
+        '<div class="stat"><div class="stat-l">Netto reale</div><div class="stat-v" style="color:#3b6d11">' + nettoGia.toFixed(2) + ' €</div></div>' +
+      '</div>' +
+    '</div>' +
+
+    // Blocco B — giorni rimanenti (giallo tratteggiato)
+    '<div style="background:#fff3cd;border-radius:10px;padding:14px 16px;margin-bottom:10px;border:1px dashed #f5c842">' +
+      '<div style="font-size:11px;font-weight:600;color:#7a5700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">+ Giorni rimanenti stimati (' + giorniRimanenti + ' × ' + (cf.ore_std||8) + 'h)</div>' +
+      '<div class="stats" style="margin-bottom:0">' +
+        '<div class="stat"><div class="stat-l">Ore stimate</div><div class="stat-v">' + oreRimanenti.toFixed(0) + 'h</div></div>' +
+        '<div class="stat"><div class="stat-l">Importo stimato</div><div class="stat-v">' + (oreRimanenti*(cf.paga||0)).toFixed(2) + ' €</div></div>' +
+      '</div>' +
+    '</div>' +
+
+    // Totale finale (scuro)
+    '<div style="background:#1a1a18;border-radius:10px;padding:16px 18px">' +
+      '<div style="font-size:11px;font-weight:600;color:#888780;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Totale mese stimato</div>' +
+      '<div class="res-row" style="border-color:#333"><span style="color:#aaa">Lordo totale</span><span style="color:#f5f4f0"><b>' + lordoTot.toFixed(2) + ' €</b></span></div>' +
+      (esenteTot > 0 ? '<div class="res-row" style="border-color:#333"><span style="color:#81c784">+ Quota esente trasferte</span><span style="color:#81c784">+ ' + esenteTot.toFixed(2) + ' €</span></div>' : '') +
+      '<div class="res-row" style="border-color:#333"><span style="color:#a87">INPS (' + (cf.inps||0) + '%)</span><span style="color:#e09090">− ' + inpsTot.toFixed(2) + ' €</span></div>' +
+      '<div class="res-row" style="border-color:#333"><span style="color:#a87">IRPEF (' + (cf.irpef||0) + '%)</span><span style="color:#e09090">− ' + irpefTot.toFixed(2) + ' €</span></div>' +
+      '<div style="border-top:1px solid #444;margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">' +
+        '<span style="color:#f5f4f0;font-weight:600;font-size:14px">Netto stimato a fine mese</span>' +
+        '<span style="color:#f5c842;font-size:20px;font-weight:700">' + nettoTot.toFixed(2) + ' €</span>' +
+      '</div>' +
+    '</div>' +
+    (speseTotal > 0 ?
+      '<div class="res-row" style="margin-top:10px"><span>Spese pasto stimate (pranzo+cena)</span><span style="color:#a32d2d">− ' + speseTotal.toFixed(2) + ' €</span></div>' +
+      '<div style="background:#333;border-radius:10px;padding:14px 16px;margin-top:6px">' +
+        '<div class="res-row" style="border:none"><span style="color:#f5f4f0"><b>Netto − Spese stimate</b></span><span style="color:#f5f4f0"><b>' + (nettoTot - speseTotal).toFixed(2) + ' €</b></span></div>' +
+      '</div>'
+    : '') +
+    '<div style="font-size:11px;color:#b4b2a9;margin-top:10px;text-align:center">* Previsione solo ore ordinarie per i giorni rimanenti</div>';
+}
+
+// ── IMPOSTAZIONI ──
+function initImpostazioni() {
+  var c=cfg();
+  document.getElementById('setOreStd').value=c.ore_std;
+  var tEl=document.getElementById('setTettoTrasf'); if(tEl) tEl.value=c.tetto_trasferte||40;
+  document.getElementById('setPaga').value=c.paga;
+  document.getElementById('setPagaStra').value=c.paga_stra;
+  document.getElementById('setInps').value=c.inps;
+  document.getElementById('setIrpef').value=c.irpef;
+  document.getElementById('setRimborsoClientePranzo').value=c.rimborso_cliente_pranzo;
+  document.getElementById('setRimborsoClienteCena').value=c.rimborso_cliente_cena;
+  document.getElementById('setRimborsoNostroPranzo').value=c.rimborso_nostro_pranzo;
+  document.getElementById('setRimborsoNostroCena').value=c.rimborso_nostro_cena;
+  document.getElementById('setRimborsoEsteroPranzo').value=c.rimborso_estero_pranzo||40;
+  document.getElementById('setRimborsoEsteroCena').value=c.rimborso_estero_cena||50;
+  document.getElementById('infoCount').textContent='Record salvati: '+db().length;
+  var pEl=document.getElementById('setPremio'); if(pEl) pEl.value=c.premio_produttivita||0;
+  var pinSalvato = localStorage.getItem('rl_pin');
+  document.getElementById('pinStatoLabel').textContent = pinSalvato ? 'PIN attivo ✓' : 'Non impostato';
+}
+function salvaImpostazioni() {
+  saveCfg({
+    ore_std: parseFloat(document.getElementById('setOreStd').value)||8,
+    paga:    parseFloat(document.getElementById('setPaga').value)||0,
+    paga_stra: parseFloat(document.getElementById('setPagaStra').value)||0,
+    inps:    parseFloat(document.getElementById('setInps').value)||0,
+    irpef:   parseFloat(document.getElementById('setIrpef').value)||0,
+    rimborso_cliente_pranzo: parseFloat(document.getElementById('setRimborsoClientePranzo').value)||0,
+    rimborso_cliente_cena:   parseFloat(document.getElementById('setRimborsoClienteCena').value)||0,
+    rimborso_nostro_pranzo:  parseFloat(document.getElementById('setRimborsoNostroPranzo').value)||0,
+    rimborso_nostro_cena:    parseFloat(document.getElementById('setRimborsoNostroCena').value)||0,
+    rimborso_estero_pranzo: parseFloat(document.getElementById('setRimborsoEsteroPranzo').value)||0,
+    rimborso_estero_cena:   parseFloat(document.getElementById('setRimborsoEsteroCena').value)||0,
+    tetto_trasferte: parseFloat(document.getElementById('setTettoTrasf').value)||40,
+    premio_produttivita: parseFloat(document.getElementById('setPremio').value)||0,
+  });
+  toast('✓ Impostazioni salvate');
+}
+
+// ── IMPORT / EXPORT ──
+function toggleImport() {
+  var a=document.getElementById('importArea');
+  a.style.display=a.style.display==='none'?'block':'none';
+}
+
+// Lettura da file
+function leggiFile(input) {
+  var file=input.files[0];
+  if(!file) return;
+  document.getElementById("fileLabel").textContent=file.name;
+  document.getElementById("importArea").style.display="block";
+  var reader=new FileReader();
+  reader.onload=function(e){
+    document.getElementById("importJson").value=e.target.result;
+  };
+  reader.onerror=function(){ toast("⚠ Errore nella lettura del file"); };
+  reader.readAsText(file);
+}
+function annullaImport() {
+  document.getElementById("importArea").style.display="none";
+  document.getElementById("importJson").value="";
+  document.getElementById("fileInput").value="";
+  document.getElementById("fileLabel").textContent="—";
+}
+
+function importa() {
+  var raw=document.getElementById('importJson').value.trim();
+  if(!raw){ toast('⚠ Nessun dato da importare'); return; }
+  try {
+    var items=JSON.parse(raw);
+    if(!Array.isArray(items)) throw new Error('non array');
+    var d=db();
+    items.forEach(function(r){ d.push(r); });
+    saveDb(d);
+    document.getElementById('importJson').value='';
+    document.getElementById('fileLabel').textContent='Nessun file selezionato';
+    document.getElementById('fileInput').value='';
+    toggleImport();
+    toast('✓ Importati '+items.length+' record');
+    aggiornaHome();
+    initImpostazioni();
+  } catch(e) { toast('⚠ Errore: file JSON non valido'); }
+}
+
+function esporta() {
+  var blob=new Blob([JSON.stringify(db(),null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='registro_lavoro_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+}
+
+function svuota() {
+  if(!confirm('Eliminare TUTTI i dati? Irreversibile.')) return;
+  localStorage.removeItem(DB_KEY);
+  toast('Archivio svuotato');
+  aggiornaHome();
+  initImpostazioni();
+}
+
+// ── UTILS ──
+var _toastTimer;
+function toast(msg) {
+  var t=document.getElementById('toast'); t.textContent=msg; t.style.display='block';
+  clearTimeout(_toastTimer); _toastTimer=setTimeout(function(){ t.style.display='none'; },2800);
+}
+function fmt(d){ if(!d) return ''; var p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+
+// ── GRAFICI ──
+var chartOreInst = null;
+var chartDonutInst = null;
+var chartKmInst   = null;
+var chartTrasfPieInst = null;
+
+function initGrafici() {
+  // popola select mesi basandosi sui dati presenti
+  var sel = document.getElementById('grafMeseRapido');
+  var mesiPresenti = {};
+  db().forEach(function(r){ if(r.data) mesiPresenti[r.data.slice(0,7)] = true; });
+  var mesiOrd = Object.keys(mesiPresenti).sort().reverse();
+  sel.innerHTML = '<option value="">— scegli un mese —</option>';
+  mesiOrd.forEach(function(m){
+    var p = m.split('-');
+    var lbl = MESI[parseInt(p[1])-1] + ' ' + p[0];
+    sel.innerHTML += '<option value="'+m+'">'+lbl+'</option>';
+  });
+  // default: mese corrente
+  var now = new Date();
+  var primoGiorno = new Date(now.getFullYear(), now.getMonth(), 1);
+  var ultimoGiorno = new Date(now.getFullYear(), now.getMonth()+1, 0);
+  document.getElementById('grafDa').value = primoGiorno.toISOString().split('T')[0];
+  document.getElementById('grafA').value  = ultimoGiorno.toISOString().split('T')[0];
+  aggiornaGrafici();
+}
+
+function selezionaMeseRapido() {
+  var val = document.getElementById('grafMeseRapido').value;
+  if(!val) return;
+  var p = val.split('-');
+  var anno = parseInt(p[0]), mese = parseInt(p[1])-1;
+  var primo = new Date(anno, mese, 1);
+  var ultimo = new Date(anno, mese+1, 0);
+  document.getElementById('grafDa').value = primo.toISOString().split('T')[0];
+  document.getElementById('grafA').value  = ultimo.toISOString().split('T')[0];
+  aggiornaGrafici();
+}
+
+function resetPeriodoGrafici() {
+  var now = new Date();
+  var primoGiorno = new Date(now.getFullYear(), now.getMonth(), 1);
+  var ultimoGiorno = new Date(now.getFullYear(), now.getMonth()+1, 0);
+  document.getElementById('grafDa').value = primoGiorno.toISOString().split('T')[0];
+  document.getElementById('grafA').value  = ultimoGiorno.toISOString().split('T')[0];
+  aggiornaGrafici();
+}
+
+function aggiornaGrafici() {
+  var da = document.getElementById('grafDa').value;
+  var a  = document.getElementById('grafA').value;
+  if(!da || !a) { toast('Seleziona un periodo'); return; }
+
+  var records = db().filter(function(r){
+    return r.data && r.data >= da && r.data <= a;
+  }).sort(function(a,b){ return a.data.localeCompare(b.data); });
+
+  // -- dati per grafico barre ore --
+  var labels   = records.map(function(r){ var p=r.data.split('-'); return p[2]+'/'+p[1]; });
+  var oreOrd   = records.map(function(r){ return r.ore_ord||0; });
+  var oreStra  = records.map(function(r){ return r.ore_stra||0; });
+  var kmList   = records.map(function(r){ return r.km||0; });
+
+  // totali
+  var totOrd  = oreOrd.reduce(function(s,v){return s+v;},0);
+  var totStra = oreStra.reduce(function(s,v){return s+v;},0);
+  var totMal  = records.reduce(function(s,r){return s+(r.malattia||0);},0);
+  var totFer  = records.reduce(function(s,r){return s+(r.ferie||0);},0);
+  var totPer  = records.reduce(function(s,r){return s+(r.permessi||0);},0);
+  var totKm   = kmList.reduce(function(s,v){return s+v;},0);
+
+  if(!window.Chart){ toast('Caricamento grafici...'); return; }
+
+  // ── Grafico Barre Ore ──
+  var ctxOre = document.getElementById('chartOre').getContext('2d');
+  if(chartOreInst) chartOreInst.destroy();
+  chartOreInst = new Chart(ctxOre, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'Ore ordinarie', data: oreOrd,  backgroundColor: '#4a90d9', borderRadius: 4 },
+        { label: 'Straordinari',  data: oreStra, backgroundColor: '#f0a500', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'top' } },
+      scales: {
+        x: { stacked: true, ticks: { font: { size: 11 }, maxRotation: 60 } },
+        y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Ore' } }
+      }
+    }
+  });
+
+  // ── Grafico Donut distribuzione ──
+  var ctxDonut = document.getElementById('chartDonut').getContext('2d');
+  if(chartDonutInst) chartDonutInst.destroy();
+  var donutData   = [totOrd, totStra, totMal, totFer, totPer].filter(function(v,i){return v>0;});
+  var donutLabels = ['Ordinarie','Straordinari','Malattia','Ferie','Permessi'].filter(function(l,i){return [totOrd,totStra,totMal,totFer,totPer][i]>0;});
+  var donutColors = ['#4a90d9','#f0a500','#e57373','#64b5f6','#ba68c8'].filter(function(c,i){return [totOrd,totStra,totMal,totFer,totPer][i]>0;});
+  chartDonutInst = new Chart(ctxDonut, {
+    type: 'doughnut',
+    data: {
+      labels: donutLabels,
+      datasets: [{ data: donutData, backgroundColor: donutColors, hoverOffset: 6 }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: { callbacks: { label: function(ctx){ return ctx.label+': '+ctx.raw.toFixed(1)+'h'; } } }
+      }
+    }
+  });
+
+  // ── Grafico KM ──
+  var ctxKm = document.getElementById('chartKm').getContext('2d');
+  if(chartKmInst) chartKmInst.destroy();
+  chartKmInst = new Chart(ctxKm, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{ label: 'KM', data: kmList, backgroundColor: '#81c784', borderRadius: 4 }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 11 }, maxRotation: 60 } },
+        y: { beginAtZero: true, title: { display: true, text: 'KM' } }
+      }
+    }
+  });
+
+  // ── Riepilogo testo ──
+  var giorni = records.filter(function(r){ return (r.ore_tot||0)>0||(r.malattia||0)>0||(r.ferie||0)>0; }).length;
+  document.getElementById('grafRiepilogo').innerHTML =
+    '<div class="stats">'+
+      '<div class="stat"><div class="stat-l">Giorni lav.</div><div class="stat-v">'+giorni+'</div></div>'+
+      '<div class="stat"><div class="stat-l">Ore ord.</div><div class="stat-v">'+totOrd.toFixed(1)+'h</div></div>'+
+      '<div class="stat"><div class="stat-l">Straord.</div><div class="stat-v">'+totStra.toFixed(1)+'h</div></div>'+
+      '<div class="stat"><div class="stat-l">KM tot.</div><div class="stat-v">'+totKm+'</div></div>'+
+    '</div>'+
+    (totMal||totFer||totPer ?
+      '<div class="stats">'+
+        (totMal ? '<div class="stat"><div class="stat-l">Malattia</div><div class="stat-v">'+totMal+'h</div></div>' : '')+
+        (totFer ? '<div class="stat"><div class="stat-l">Ferie</div><div class="stat-v">'+totFer+'h</div></div>' : '')+
+        (totPer ? '<div class="stat"><div class="stat-l">Permessi</div><div class="stat-v">'+totPer+'h</div></div>' : '')+
+      '</div>' : '');
+
+  // ── Busta e Preventivo nel periodo selezionato ──
+  var c = cfg();
+  var cP2=0,cC2=0,nP2=0,nC2=0,eP2=0,eC2=0;
+  records.forEach(function(r){
+    var t = r.trasferte||{};
+    if(typeof t==='number'){ nP2+=t>0?1:0; return; }
+    if(t.clientePranzo) cP2++; if(t.clienteCena) cC2++;
+    if(t.nostroPranzo)  nP2++; if(t.nostroCena)  nC2++;
+    if(t.esteroPranzo)  eP2++; if(t.esteroCena)  eC2++;
+  });
+  var rimTot  = cP2*(c.rimborso_cliente_pranzo||0)+cC2*(c.rimborso_cliente_cena||0)+
+                nP2*(c.rimborso_nostro_pranzo||0) +nC2*(c.rimborso_nostro_cena||0)+
+                eP2*(c.rimborso_estero_pranzo||0) +eC2*(c.rimborso_estero_cena||0);
+  var giorniConTrasf = records.filter(function(r){
+    var t=r.trasferte; if(!t) return false;
+    if(typeof t==='number') return t>0;
+    return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena;
+  }).length;
+  var tetto  = c.tetto_trasferte || 40;
+  // Calcolo esente corretto: per ogni giorno con trasferta, min(rimborso_gg, tetto)
+  var esenteTot = 0, tassabileTot = 0;
+  records.forEach(function(r){
+    var t = r.trasferte||{};
+    var hasTrasf = (typeof t==='number'&&t>0) ||
+      (t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena);
+    if(!hasTrasf) return;
+    var rimGg = 0;
+    if(typeof t==='number'){ rimGg = t>0 ? (c.rimborso_nostro_pranzo||0) : 0; }
+    else {
+      if(t.clientePranzo) rimGg += (c.rimborso_cliente_pranzo||0);
+      if(t.clienteCena)   rimGg += (c.rimborso_cliente_cena||0);
+      if(t.nostroPranzo)  rimGg += (c.rimborso_nostro_pranzo||0);
+      if(t.nostroCena)    rimGg += (c.rimborso_nostro_cena||0);
+      if(t.esteroPranzo)  rimGg += (c.rimborso_estero_pranzo||40);
+      if(t.esteroCena)    rimGg += (c.rimborso_estero_cena||50);
+    }
+    esenteTot    += Math.min(rimGg, tetto);
+    tassabileTot += Math.max(0, rimGg - tetto);
+  });
+  var totAssOre = totMal + totFer + totPer;
+  var impOrd  = totOrd  * (c.paga||0);
+  var impStra = totStra * (c.paga_stra||0);
+  var impAss  = totAssOre * (c.paga||0);
+  var lordo   = impOrd + impStra + impAss + tassabileTot;
+  var inps    = lordo * ((c.inps||0)/100);
+  var irpef   = (lordo-inps) * ((c.irpef||0)/100);
+  var netto   = lordo - inps - irpef + esenteTot;
+  var spese   = records.reduce(function(s,r){return s+(r.spesa_pranzo||0)+(r.spesa_cena||0);},0);
+  var giorniGia = records.filter(function(r){return (r.ore_tot||0)>0||(r.malattia||0)>0||(r.ferie||0)>0;}).length;
+
+  // Festivi per il preventivo
+  var FEST=['01-01','01-06','04-25','05-01','06-02','08-15','11-01','12-08','12-25','12-26'];
+  function easterG(yr){var a=yr%19,b=Math.floor(yr/100),cv=yr%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(cv/4),k=cv%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),dy=((h+l-7*m+114)%31)+1;return new Date(yr,mo-1,dy);}
+  function festG(ds){var mmdd=ds.slice(5);if(FEST.indexOf(mmdd)!==-1)return true;var yr=parseInt(ds.slice(0,4));var ep=easterG(yr);var epS=ep.toISOString().slice(0,10);var em=new Date(ep);em.setDate(ep.getDate()+1);if(ds===epS||ds===em.toISOString().slice(0,10))return true;return false;}
+
+  // Capisce se il periodo è un mese intero
+  var oggi2 = new Date();
+  var isMese = false; var annoM, meseM;
+  if(da && a){
+    var daSplit=da.split('-'), aSplit=a.split('-');
+    if(daSplit[0]===aSplit[0] && daSplit[1]===aSplit[1]){
+      annoM=parseInt(daSplit[0]); meseM=parseInt(daSplit[1])-1;
+      var atteso1=annoM+'-'+String(meseM+1).padStart(2,'0')+'-01';
+      var ultimoG=new Date(annoM,meseM+1,0).getDate();
+      var attesoU=annoM+'-'+String(meseM+1).padStart(2,'0')+'-'+String(ultimoG).padStart(2,'0');
+      if(da===atteso1 && a===attesoU) isMese=true;
+    }
+  }
+
+  var grafBustaEl = document.getElementById('grafBusta');
+
+  // PIN check
+  if(localStorage.getItem('rl_pin') &&
+     document.getElementById('bustaContenuto') &&
+     document.getElementById('bustaContenuto').style.display==='none'){
+    grafBustaEl.innerHTML='<div style="text-align:center;padding:30px;color:#888780"><div style="font-size:32px;margin-bottom:10px">🔒</div><div style="font-size:14px">Sblocca la Busta Paga per vedere i dati economici</div></div>';
+    return;
+  }
+  if(lordo===0 && !isMese){
+    grafBustaEl.innerHTML='<p style="color:#bbb;font-size:14px;text-align:center;padding:20px">Nessun dato nel periodo selezionato.</p>';
+    return;
+  }
+
+  // Consuntivo base (sempre mostrato)
+  var htmlBusta =
+    '<div class="stats" style="margin-bottom:14px">'+
+      '<div class="stat"><div class="stat-l">Ore ord.</div><div class="stat-v">'+totOrd.toFixed(1)+'h</div><div class="stat-s">'+impOrd.toFixed(2)+' €</div></div>'+
+      (totStra?'<div class="stat"><div class="stat-l">Straord.</div><div class="stat-v">'+totStra.toFixed(1)+'h</div><div class="stat-s">'+impStra.toFixed(2)+' €</div></div>':'')+
+      (rimTot?'<div class="stat"><div class="stat-l">Trasferte</div><div class="stat-v">'+rimTot.toFixed(2)+' €</div></div>':'')+
+    '</div>'+
+    '<div class="res-row"><span>Totale Lordo</span><span><b>'+lordo.toFixed(2)+' €</b></span></div>'+
+    '<div class="res-row"><span>INPS ('+c.inps+'%)</span><span style="color:#a32d2d">− '+inps.toFixed(2)+' €</span></div>'+
+    '<div class="res-row"><span>IRPEF ('+c.irpef+'%)</span><span style="color:#a32d2d">− '+irpef.toFixed(2)+' €</span></div>'+
+    '<div class="busta-highlight res-row res-tot" style="margin-top:8px"><span><b>Stimato Netto in Busta</b></span><span><b>'+netto.toFixed(2)+' €</b></span></div>'+
+    (spese?'<div class="res-row" style="margin-top:6px"><span>Spese effettive (pranzo+cena)</span><span style="color:#a32d2d">− '+spese.toFixed(2)+' €</span></div>'+
+      '<div class="busta-final"><div class="res-row" style="border:none"><span><b>Netto − Spese</b></span><span><b>'+(netto-spese).toFixed(2)+' €</b></span></div></div>':'');
+
+  // Se periodo = mese intero → aggiungi blocco preventivo coerente
+  if(isMese){
+    var fineMese = new Date(annoM, meseM+1, 0);
+    var mesePas  = oggi2 > fineMese;
+    var meseCor  = oggi2.getFullYear()===annoM && oggi2.getMonth()===meseM;
+    var meseFut  = annoM>oggi2.getFullYear()||(annoM===oggi2.getFullYear()&&meseM>oggi2.getMonth());
+
+    // Calcola giorni lavorativi totali del mese
+    var totLavM=0, oreStd=c.ore_std||8;
+    var ultimoM=new Date(annoM,meseM+1,0).getDate();
+    var dataOggiS=oggi2.toISOString().slice(0,10);
+    var giorniRim=0;
+    for(var gx=1;gx<=ultimoM;gx++){
+      var ds=annoM+'-'+String(meseM+1).padStart(2,'0')+'-'+String(gx).padStart(2,'0');
+      var dw=new Date(annoM,meseM,gx).getDay();
+      if(dw>=1&&dw<=5&&!festG(ds)){
+        totLavM++;
+        if(meseCor&&ds>dataOggiS) giorniRim++;
+        if(meseFut) giorniRim=totLavM;
+      }
+    }
+    if(meseFut) giorniRim=totLavM;
+    var giorniMancanti=Math.max(0,totLavM-giorniGia);
+
+    htmlBusta += '<div style="border-top:2px solid #eee;margin-top:16px;padding-top:16px">';
+    htmlBusta += '<div style="font-size:12px;font-weight:700;color:#5f5e5a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">📅 Preventivo a fine mese</div>';
+
+    if(mesePas){
+      if(giorniMancanti<=0){
+        htmlBusta+='<div style="text-align:center;padding:12px;color:#3b6d11;font-size:13px;">✅ Mese completato — tutti i giorni inseriti.</div>';
+      } else {
+        var oreManc=giorniMancanti*oreStd;
+        var impManc=oreManc*(c.paga||0);
+        var lordoTotM=lordo+impManc;
+        var inpsTotM=lordoTotM*((c.inps||0)/100);
+        var irpefTotM=(lordoTotM-inpsTotM)*((c.irpef||0)/100);
+        var nettoTotM=lordoTotM-inpsTotM-irpefTotM+esenteTot;
+        htmlBusta+=
+          '<div style="background:#fff8e1;border:1.5px solid #f5c842;border-radius:10px;padding:12px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start">'+
+            '<span style="font-size:18px">⚠️</span>'+
+            '<div style="font-size:12px;color:#7a5700"><b>'+giorniMancanti+' giorn'+(giorniMancanti===1?'o':'i')+' non inserit'+(giorniMancanti===1?'o':'i')+'</b><br>'+
+            'Stima con '+giorniMancanti+'×'+oreStd+'h aggiuntive:</div>'+
+          '</div>'+
+          '<div style="display:flex;gap:10px;margin-bottom:10px">'+
+            '<div class="stat" style="flex:1"><div class="stat-l">Ore mancanti</div><div class="stat-v">'+oreManc.toFixed(0)+'h</div><div class="stat-s">'+impManc.toFixed(2)+' €</div></div>'+
+            '<div class="stat" style="flex:1"><div class="stat-l">Netto stimato</div><div class="stat-v" style="color:#f5c842">'+nettoTotM.toFixed(2)+' €</div></div>'+
+          '</div>';
+      }
+    } else if(meseCor){
+      // Mese corrente: A inserito + B rimanenti
+      var oreRim2=giorniRim*oreStd;
+      var impRim2=oreRim2*(c.paga||0);
+      var lordoRim2=impRim2;
+      var inpsRim2=lordoRim2*((c.inps||0)/100);
+      var irpefRim2=(lordoRim2-inpsRim2)*((c.irpef||0)/100);
+      var nettoRim2=lordoRim2-inpsRim2-irpefRim2;
+      var lordoTot2=lordo+lordoRim2;
+      var inpsTot2=lordoTot2*((c.inps||0)/100);
+      var irpefTot2=(lordoTot2-inpsTot2)*((c.irpef||0)/100);
+      var nettoTot2=lordoTot2-inpsTot2-irpefTot2+esenteTot;
+      htmlBusta+=
+        '<div style="display:flex;gap:8px;font-size:12px;color:#5f5e5a;margin-bottom:12px">'+
+          '<span>Inseriti: <b style="color:#1a1a18">'+giorniGia+'</b></span>'+
+          '<span>·</span>'+
+          '<span>Rimanenti (lun–ven): <b style="color:#185fa5">'+giorniRim+'</b></span>'+
+        '</div>'+
+        '<div style="background:#f9f8f5;border-radius:10px;padding:12px 14px;margin-bottom:8px">'+
+          '<div style="font-size:10px;font-weight:700;color:#5f5e5a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">A · Già inserito ('+giorniGia+' gg)</div>'+
+          '<div style="display:flex;gap:8px">'+
+            '<div class="stat" style="flex:1"><div class="stat-l">Ore inserite</div><div class="stat-v">'+totOrd.toFixed(1)+'h</div></div>'+
+            '<div class="stat" style="flex:1"><div class="stat-l">Netto reale</div><div class="stat-v" style="color:#3b6d11">'+netto.toFixed(2)+' €</div></div>'+
+          '</div>'+
+        '</div>'+
+        '<div style="background:#e6f1fb;border-radius:10px;padding:12px 14px;margin-bottom:8px">'+
+          '<div style="font-size:10px;font-weight:700;color:#185fa5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">B · Previsione ('+giorniRim+' gg × '+oreStd+'h)</div>'+
+          '<div style="display:flex;gap:8px">'+
+            '<div class="stat" style="flex:1"><div class="stat-l">Ore previste</div><div class="stat-v">'+oreRim2.toFixed(0)+'h</div></div>'+
+            '<div class="stat" style="flex:1"><div class="stat-l">Netto stimato</div><div class="stat-v" style="color:#185fa5">'+nettoRim2.toFixed(2)+' €</div></div>'+
+          '</div>'+
+        '</div>'+
+        '<div style="background:#1a1a18;border-radius:10px;padding:14px 16px">'+
+          '<div style="display:flex;justify-content:space-between;align-items:center">'+
+            '<span style="color:#f5f4f0;font-weight:600;font-size:13px">A + B · Netto a fine mese</span>'+
+            '<span style="color:#7ec8e3;font-size:18px;font-weight:700">'+nettoTot2.toFixed(2)+' €</span>'+
+          '</div>'+
+        '</div>';
+    } else if(meseFut){
+      var oreF=giorniRim*oreStd;
+      var lrdF=oreF*(c.paga||0);
+      var nttF=lrdF-lrdF*((c.inps||0)/100)-(lrdF-lrdF*((c.inps||0)/100))*((c.irpef||0)/100);
+      htmlBusta+=
+        '<div style="background:#e6f1fb;border-radius:10px;padding:12px 14px">'+
+          '<div style="display:flex;gap:10px">'+
+            '<div class="stat" style="flex:1"><div class="stat-l">Giorni lav.</div><div class="stat-v">'+giorniRim+'</div></div>'+
+            '<div class="stat" style="flex:1"><div class="stat-l">Ore previste</div><div class="stat-v">'+oreF.toFixed(0)+'h</div></div>'+
+            '<div class="stat" style="flex:1"><div class="stat-l">Netto stimato</div><div class="stat-v" style="color:#185fa5">'+nttF.toFixed(2)+' €</div></div>'+
+          '</div>'+
+        '</div>';
+    }
+    htmlBusta+='</div>';
+  }
+
+  grafBustaEl.innerHTML = htmlBusta;
+}
+
+// ── CLIENTI ──
+function initClienti() {
+  var el = document.getElementById('clienteSearch');
+  if(el) el.value = '';
+  var det = document.getElementById('clienteDettaglio');
+  if(det) det.style.display = 'none';
+  var lst = document.getElementById('clienteLista');
+  if(lst) lst.style.display = 'block';
+  cercaClienti();
+}
+
+function cercaClienti() {
+  var searchEl = document.getElementById('clienteSearch');
+  if(!searchEl) return;
+  var q = (searchEl.value || '').toLowerCase().trim();
+  var d = db();
+  var mappa = {};
+  d.forEach(function(r, i) {
+    if(!r.manuale) return;
+    var cl = (r.cliente || '').trim();
+    if(!cl || cl === 'Ferie' || cl === 'Malattia') return;
+    if(q && cl.toLowerCase().indexOf(q) === -1) return;
+    var key = cl.toLowerCase(); // raggruppa senza distinzione maiuscole
+    if(!mappa[key]) mappa[key] = { nome: cl, giorni: 0, ore: 0, km: 0, stra: 0 };
+    mappa[key].giorni++;
+    mappa[key].ore  += r.ore_tot  || 0;
+    mappa[key].km   += r.km       || 0;
+    mappa[key].stra += r.ore_stra || 0;
+  });
+  var lista = Object.values(mappa).sort(function(a, b) { return b.giorni - a.giorni; });
+  window._clientiLista = lista;
+  var cont = document.getElementById('clienteLista');
+  if(!lista.length) {
+    cont.innerHTML = '<div class="empty">Nessun cliente trovato.</div>';
+    return;
+  }
+  var html = '';
+  lista.forEach(function(cl, idx) {
+    html += '<div class="cliente-card" onclick="apriDettaglioClienteIdx(' + idx + ')">' +
+      '<div class="cliente-card-name">' + esc(cl.nome) + '</div>' +
+      '<div class="cliente-card-stats">' +
+        '<span>' + cl.giorni + ' giorni</span>' +
+        '<span>' + cl.ore.toFixed(1) + 'h</span>' +
+        (cl.stra > 0 ? '<span>+' + cl.stra.toFixed(1) + 'h stra</span>' : '') +
+        (cl.km  > 0 ? '<span>' + cl.km + ' km</span>' : '') +
+      '</div>' +
+    '</div>';
+  });
+  cont.innerHTML = html;
+}
+
+function apriDettaglioClienteIdx(idx) {
+  var lista = window._clientiLista || [];
+  if(lista[idx]) apriDettaglioCliente(lista[idx].nome);
+}
+
+function apriDettaglioCliente(nome) {
+  var d = db();
+  var records = [];
+  d.forEach(function(r, i) {
+    if((r.cliente||'').trim() === nome) records.push({ r: r, i: i });
+  });
+  records.sort(function(a, b) { return b.r.data.localeCompare(a.r.data); });
+
+  var totOre  = records.reduce(function(s, x) { return s + (x.r.ore_tot  || 0); }, 0);
+  var totStra = records.reduce(function(s, x) { return s + (x.r.ore_stra || 0); }, 0);
+  var totKm   = records.reduce(function(s, x) { return s + (x.r.km       || 0); }, 0);
+
+  document.getElementById('clienteDetNome').textContent = nome;
+  document.getElementById('clienteDetStats').innerHTML =
+    '<div class="stat"><div class="stat-l">Interventi</div><div class="stat-v">' + records.length + '</div></div>' +
+    '<div class="stat"><div class="stat-l">Ore totali</div><div class="stat-v">' + totOre.toFixed(1) + 'h</div></div>' +
+    '<div class="stat"><div class="stat-l">Straord.</div><div class="stat-v">' + totStra.toFixed(1) + 'h</div></div>' +
+    '<div class="stat"><div class="stat-l">KM tot.</div><div class="stat-v">' + totKm + ' km</div></div>';
+
+  var righeHtml = '';
+  records.forEach(function(x) {
+    var r = x.r;
+    var orari = '';
+    if(r.mat_da && r.mat_a) orari += r.mat_da + '-' + r.mat_a;
+    if(r.pom_da && r.pom_a) orari += (orari ? ' / ' : '') + r.pom_da + '-' + r.pom_a;
+    var idx = x.i;
+    righeHtml += '<div class="mod-row" onclick="apriModifica(' + idx + ', \'clienti\')">' +
+      '<div>' +
+        '<div class="mod-row-date">' + fmt(r.data) + '</div>' +
+        '<div class="mod-row-info">' + (orari||'—') + ' &middot; ' + (r.ore_tot||0).toFixed(1) + 'h' +
+          (r.km ? ' &middot; ' + r.km + ' km' : '') +
+          ((r.ore_stra||0) > 0 ? ' &middot; <span class="bdg bdg-a">+' + r.ore_stra.toFixed(1) + 'h</span>' : '') +
+        '</div>' +
+      '</div>' +
+      '<span style="color:#ccc;font-size:18px">&#8250;</span>' +
+    '</div>';
+  });
+  document.getElementById('clienteDetRighe').innerHTML = righeHtml;
+
+  document.getElementById('clienteLista').style.display = 'none';
+  document.getElementById('clienteDettaglio').style.display = 'block';
+}
+
+function tornaListaClienti() {
+  document.getElementById('clienteDettaglio').style.display = 'none';
+  document.getElementById('clienteLista').style.display = 'block';
+}
+
+// ── MODIFICA ──
+function apriModifica(idx, fromScreen) {
+  var d = db();
+  var r = d[idx];
+  if(!r) return;
+
+  // popola campi
+  document.getElementById('mData').value      = r.data || '';
+  document.getElementById('mCliente').value   = r.cliente || '';
+  document.getElementById('mMatDa').value     = r.mat_da  || '';
+  document.getElementById('mMatA').value      = r.mat_a   || '';
+  document.getElementById('mPomDa').value     = r.pom_da  || '';
+  document.getElementById('mPomA').value      = r.pom_a   || '';
+  document.getElementById('mOrd').value       = r.ore_ord  || '';
+  document.getElementById('mStra').value      = r.ore_stra || '';
+  document.getElementById('mSpesaPranzo').value = r.spesa_pranzo || '';
+  document.getElementById('mSpesaCena').value   = r.spesa_cena   || '';
+  document.getElementById('mKm').value        = r.km       || '';
+  document.getElementById('mPermessi').value  = r.permessi || '';
+  document.getElementById('mCodici').value    = r.codici   || '';
+  document.getElementById('mNote').value      = r.note     || '';
+  document.getElementById('mMalattia').checked = !!(r.malattia && r.malattia > 0);
+  document.getElementById('mFerie').checked    = !!(r.ferie    && r.ferie    > 0);
+  document.getElementById('mIdx').value       = idx;
+  document.getElementById('mOrigScreen').value = fromScreen;
+  document.getElementById('mPrevCalc').style.display = 'none';
+
+  // trasferte
+  ['m_clientePranzo','m_clienteCena','m_nostroPranzo','m_nostroCena','m_esteroPranzo','m_esteroCena'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if(el){ el.classList.remove('attiva'); el.querySelector('.chk').textContent = '☐'; }
+  });
+  var t = r.trasferte;
+  if(t && typeof t === 'object') {
+    var mmap = {clientePranzo:'m_clientePranzo',clienteCena:'m_clienteCena',nostroPranzo:'m_nostroPranzo',nostroCena:'m_nostroCena',
+      esteroPranzo:'m_esteroPranzo',esteroCena:'m_esteroCena'};
+    Object.keys(mmap).forEach(function(k){ if(t[k]){ var e=document.getElementById(mmap[k]); if(e){e.classList.add('attiva');e.querySelector('.chk').textContent='☒';}} });
+  }
+
+  vai('modifica');
+}
+
+function autoCalcMod() {
+  var md=parseFloat(document.getElementById('mMatDa').value)||0;
+  var ma=parseFloat(document.getElementById('mMatA').value)||0;
+  var pd=parseFloat(document.getElementById('mPomDa').value)||0;
+  var pa=parseFloat(document.getElementById('mPomA').value)||0;
+  var tot=(ma-md)+(pa-pd);
+  var prev=document.getElementById('mPrevCalc');
+  if(tot>0){
+    var std=cfg().ore_std, ord=Math.min(tot,std), stra=Math.max(0,tot-std);
+    document.getElementById('mOrd').value=ord.toFixed(1);
+    document.getElementById('mStra').value=stra.toFixed(1);
+    prev.style.display='block';
+    prev.textContent='Totale: '+tot.toFixed(1)+'h → Ordinarie: '+ord.toFixed(1)+'h   Straordinarie: '+stra.toFixed(1)+'h';
+  } else { prev.style.display='none'; }
+}
+
+function getMTrasfData() {
+  return {
+    clientePranzo:       document.getElementById('m_clientePranzo').classList.contains('attiva'),
+    clienteCena:         document.getElementById('m_clienteCena').classList.contains('attiva'),
+    nostroPranzo:        document.getElementById('m_nostroPranzo').classList.contains('attiva'),
+    nostroCena:          document.getElementById('m_nostroCena').classList.contains('attiva'),
+    esteroPranzo: document.getElementById('m_esteroPranzo').classList.contains('attiva'),
+    esteroCena:   document.getElementById('m_esteroCena').classList.contains('attiva')
+  };
+}
+
+function salvaModifica() {
+  var idx = parseInt(document.getElementById('mIdx').value);
+  var d = db();
+  if(isNaN(idx) || idx < 0 || idx >= d.length) { toast('Errore: record non trovato'); return; }
+  var ord  = parseFloat(document.getElementById('mOrd').value)  || 0;
+  var stra = parseFloat(document.getElementById('mStra').value) || 0;
+  d[idx] = {
+    data:      d[idx].data,
+    manuale:   true,
+    cliente:   document.getElementById('mCliente').value.trim(),
+    mat_da:    parseFloat(document.getElementById('mMatDa').value) || 0,
+    mat_a:     parseFloat(document.getElementById('mMatA').value)  || 0,
+    pom_da:    parseFloat(document.getElementById('mPomDa').value) || 0,
+    pom_a:     parseFloat(document.getElementById('mPomA').value)  || 0,
+    ore_ord:   ord,
+    ore_stra:  stra,
+    ore_tot:   ord + stra,
+    trasferte: getMTrasfData(),
+    spesa_pranzo: parseFloat(document.getElementById('mSpesaPranzo').value) || 0,
+    spesa_cena:   parseFloat(document.getElementById('mSpesaCena').value)   || 0,
+    km:        parseInt(document.getElementById('mKm').value)       || 0,
+    malattia:  document.getElementById('mMalattia').checked ? 8 : 0,
+    ferie:     document.getElementById('mFerie').checked    ? 8 : 0,
+    permessi:  parseFloat(document.getElementById('mPermessi').value) || 0,
+    codici:    document.getElementById('mCodici').value.trim().toUpperCase(),
+    note:      document.getElementById('mNote').value.trim()
+  };
+  saveDb(d);
+  toast('✓ Modifiche salvate');
+  aggiornaHome();
+  var from = document.getElementById('mOrigScreen').value || 'visualizza';
+  if(from === 'clienti') { vai('clienti'); initClienti(); }
+  else { vai('visualizza'); renderLista(); }
+}
+
+function eliminaDaModifica() {
+  var idx = parseInt(document.getElementById('mIdx').value);
+  if(!confirm('Eliminare questo record?')) return;
+  var d = db(); d.splice(idx, 1); saveDb(d);
+  toast('Record eliminato');
+  aggiornaHome();
+  var from = document.getElementById('mOrigScreen').value || 'visualizza';
+  if(from === 'clienti') { vai('clienti'); initClienti(); }
+  else { vai('visualizza'); renderLista(); }
+}
+
+
+// ── CODICI ERRORE ──
+function initCodici() {
+  document.getElementById('codiceSearch').value = '';
+  document.getElementById('codiciPanel').style.display = 'none';
+  document.getElementById('codiciStats').style.display = 'none';
+  document.getElementById('codiciPlaceholder').style.display = 'block';
+  document.getElementById('codiciBody').innerHTML = '';
+}
+
+function cercaCodice() {
+  var q = document.getElementById('codiceSearch').value.trim().toUpperCase();
+  var placeholder = document.getElementById('codiciPlaceholder');
+  var panel       = document.getElementById('codiciPanel');
+  var statsBox    = document.getElementById('codiciStats');
+
+  if(q.length < 1) {
+    placeholder.style.display = 'block';
+    panel.style.display       = 'none';
+    statsBox.style.display    = 'none';
+    return;
+  }
+
+  var d = db();
+  var trovati = [];
+  d.forEach(function(r, i) {
+    if(!r.codici) return;
+    // cerca il codice come parola intera (case insensitive)
+    var codiciList = r.codici.toUpperCase().split(/[\s,;]+/).filter(Boolean);
+    var match = codiciList.some(function(cod) { return cod.indexOf(q) !== -1; });
+    if(match) trovati.push({ r: r, i: i, codiciList: codiciList });
+  });
+
+  trovati.sort(function(a, b) { return b.r.data.localeCompare(a.r.data); });
+
+  placeholder.style.display = 'none';
+
+  if(!trovati.length) {
+    panel.style.display    = 'block';
+    statsBox.style.display = 'none';
+    document.getElementById('codiciBody').innerHTML = '';
+    document.getElementById('codiciEmpty').style.display = 'block';
+    return;
+  }
+
+  // stats
+  var clientiUniq = {};
+  trovati.forEach(function(x){ if(x.r.cliente) clientiUniq[x.r.cliente] = true; });
+  statsBox.style.display = 'block';
+  document.getElementById('codiciStatsBox').innerHTML =
+    '<div class="stat"><div class="stat-l">Interventi</div><div class="stat-v">' + trovati.length + '</div></div>' +
+    '<div class="stat"><div class="stat-l">Clienti coinvolti</div><div class="stat-v">' + Object.keys(clientiUniq).length + '</div></div>';
+
+  // tabella
+  document.getElementById('codiciEmpty').style.display = 'none';
+  panel.style.display = 'block';
+  var html = '';
+  trovati.forEach(function(x) {
+    var r = x.r;
+    var idx = x.i;
+    // evidenzia il codice cercato
+    var codiciBadges = x.codiciList.map(function(cod) {
+      var cls = cod.indexOf(q) !== -1 ? 'bdg bdg-m' : 'bdg bdg-gray';
+      return '<span class="' + cls + '">' + esc(cod) + '</span>';
+    }).join(' ');
+    html += '<tr style="cursor:pointer" onclick="apriModifica(' + idx + ',\'codici\')">' +
+      '<td><b>' + fmt(r.data) + '</b></td>' +
+      '<td>' + (r.cliente ? '<span class="bdg bdg-b">' + esc(r.cliente) + '</span>' : '&#8212;') + '</td>' +
+      '<td>' + codiciBadges + '</td>' +
+      '<td>' + (r.ore_tot||0).toFixed(1) + 'h</td>' +
+      '<td><span style="color:#ccc">&#8250;</span></td>' +
+    '</tr>';
+  });
+  document.getElementById('codiciBody').innerHTML = html;
+}
+
+
+// ── PIN BUSTA PAGA ──
+var SUPER_PIN = '9894';
+
+function popolaBustaMesi() {
+  var sel = document.getElementById('bustaMeseRapido');
+  if(!sel) return;
+  var mesiPresenti = {};
+  db().forEach(function(r){ if(r.data) mesiPresenti[r.data.slice(0,7)] = true; });
+  var mesiOrd = Object.keys(mesiPresenti).sort().reverse();
+  sel.innerHTML = '<option value="">— scegli un mese —</option>';
+  mesiOrd.forEach(function(m){
+    var p = m.split('-');
+    var lbl = MESI[parseInt(p[1])-1] + ' ' + p[0];
+    var opt = document.createElement('option');
+    opt.value = m; opt.textContent = lbl;
+    // seleziona il mese corrente
+    if(m === new Date().toISOString().slice(0,7)) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function selezionaMeseBusta() {
+  var val = document.getElementById('bustaMeseRapido').value;
+  if(!val) return;
+  document.getElementById('bustaMese').value = val;
+  calcolaBusta();
+}
+
+function initBusta() {
+  popolaBustaMesi();
+  document.getElementById('bustaMese').value = new Date().toISOString().slice(0,7);
+  // sync select to current month
+  var curMese = new Date().toISOString().slice(0,7);
+  var sel = document.getElementById('bustaMeseRapido');
+  if(sel) sel.value = curMese;
+  var pin = localStorage.getItem('rl_pin');
+  // tasto blocca visibile solo se PIN è attivo
+  document.getElementById('btnBloccaBusta').style.display = pin ? 'inline-block' : 'none';
+  if(!pin) {
+    document.getElementById('bustaLock').style.display = 'none';
+    document.getElementById('bustaContenuto').style.display = 'block';
+    calcolaBusta();
+  } else {
+    document.getElementById('bustaContenuto').style.display = 'none';
+    document.getElementById('bustaLock').style.display = 'block';
+    resetPin();
+    setTimeout(function(){ document.getElementById('pin1').focus(); }, 200);
+  }
+}
+
+function pinNext(el, nextId) {
+  // mantieni solo una cifra
+  if(el.value.length > 1) el.value = el.value.slice(-1);
+  if(el.value && nextId) document.getElementById(nextId).focus();
+  if(!nextId && el.value) verificaPin();
+}
+
+function pinKey(e, el, prevId, nextId) {
+  if(e.key === 'Backspace' && !el.value && prevId) {
+    document.getElementById(prevId).focus();
+  }
+  if(e.key === 'Enter') verificaPin();
+}
+
+function getPinInserito() {
+  return ['pin1','pin2','pin3','pin4'].map(function(id){
+    return document.getElementById(id).value;
+  }).join('');
+}
+
+function resetPin() {
+  ['pin1','pin2','pin3','pin4'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('pinError').textContent = '';
+}
+
+function verificaPin() {
+  var inserito = getPinInserito();
+  if(inserito.length < 4) { document.getElementById('pinError').textContent = 'Inserisci tutte e 4 le cifre'; return; }
+  var salvato = localStorage.getItem('rl_pin');
+  if(inserito === SUPER_PIN || inserito === salvato) {
+    document.getElementById('bustaLock').style.display = 'none';
+    document.getElementById('bustaContenuto').style.display = 'block';
+    document.getElementById('pinError').textContent = '';
+    document.getElementById('btnBloccaBusta').style.display = localStorage.getItem('rl_pin') ? 'inline-block' : 'none';
+    calcolaBusta();
+  } else {
+    document.getElementById('pinError').textContent = 'PIN errato, riprova';
+    resetPin();
+    setTimeout(function(){ document.getElementById('pin1').focus(); }, 100);
+  }
+}
+
+function bloccaBusta() {
+  document.getElementById('bustaContenuto').style.display = 'none';
+  document.getElementById('bustaLock').style.display = 'block';
+  resetPin();
+  setTimeout(function(){ document.getElementById('pin1').focus(); }, 200);
+}
+
+function salvaPin() {
+  var p1 = document.getElementById('setPin1').value;
+  var p2 = document.getElementById('setPin2').value;
+  var msg = document.getElementById('pinMsg');
+  if(!/^[0-9]{4}$/.test(p1)){ msg.style.color='#a32d2d'; msg.textContent='Il PIN deve essere di esattamente 4 cifre numeriche'; return; }
+  if(p1 !== p2){ msg.style.color='#a32d2d'; msg.textContent='I due PIN non coincidono'; return; }
+  if(p1 === SUPER_PIN){ msg.style.color='#a32d2d'; msg.textContent='Questo PIN non è utilizzabile'; return; }
+  localStorage.setItem('rl_pin', p1);
+  document.getElementById('setPin1').value = '';
+  document.getElementById('setPin2').value = '';
+  document.getElementById('pinStatoLabel').textContent = 'PIN attivo ✓';
+  msg.style.color='#3b6d11'; msg.textContent='✓ PIN impostato correttamente';
+  setTimeout(function(){ msg.textContent=''; }, 3000);
+}
+
+function rimuoviPin() {
+  var msg = document.getElementById('pinMsg');
+  if(!localStorage.getItem('rl_pin')){ msg.style.color='#888'; msg.textContent='Nessun PIN impostato'; return; }
+  var inserito = prompt('Inserisci il PIN attuale o la superpassword per confermare la rimozione:');
+  if(inserito === null) return;
+  var salvato = localStorage.getItem('rl_pin');
+  if(inserito !== SUPER_PIN && inserito !== salvato){
+    msg.style.color='#a32d2d'; msg.textContent='PIN errato — rimozione annullata';
+    setTimeout(function(){ msg.textContent=''; }, 3000);
+    return;
+  }
+  localStorage.removeItem('rl_pin');
+  document.getElementById('pinStatoLabel').textContent = 'Non impostato';
+  document.getElementById('setPin1').value = '';
+  document.getElementById('setPin2').value = '';
+  msg.style.color='#3b6d11'; msg.textContent='✓ PIN rimosso correttamente';
+  setTimeout(function(){ msg.textContent=''; }, 3000);
+}
+
+
+// ── INIT ──
+(function(){
+  // Migrazione: marca come manuale i record che hanno cliente O assenze
+  try {
+    var d = JSON.parse(localStorage.getItem('rl_db_v3')) || [];
+    var aggiornati = false;
+    d.forEach(function(r){
+      if(!r.manuale) {
+        var haCliente = r.cliente && r.cliente.trim() !== '';
+        var haAssenza = (r.malattia||0)>0 || (r.ferie||0)>0 || (r.permessi||0)>0;
+        var haExtra   = (r.km||0)>0 || (r.codici||'').trim()!=='' || (r.note||'').trim()!=='';
+        if(haCliente || haAssenza || haExtra) {
+          r.manuale = true; aggiornati = true;
+        }
+      }
+    });
+    if(aggiornati) localStorage.setItem('rl_db_v3', JSON.stringify(d));
+  } catch(e) {}
+
+  function setVal(id, val) { var el=document.getElementById(id); if(el) el.value=val; }
+  setVal('fData', new Date().toISOString().split('T')[0]);
+  setVal('filtMese', new Date().toISOString().slice(0,7));
+  setVal('bustaMese', new Date().toISOString().slice(0,7));
+  try { aggiornaHome(); } catch(e) { console.error('init error:', e); }
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// Registra il service worker per il funzionamento offline
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('service-worker.js').then(function(registration) {
+      console.log('✓ Service Worker registrato:', registration);
+    }).catch(function(error) {
+      console.log('✗ Errore nella registrazione del Service Worker:', error);
+    });
+  });
+}
+</script>
+<button class="fab-back" id="fabBack" onclick="goHome()">&#8592; Torna alla home</button>
+</body>
+</html>

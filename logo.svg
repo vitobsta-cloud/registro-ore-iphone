@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Sfondo arrotondato -->
+  <rect width="512" height="512" rx="110" fill="#1a1a18"/>
+  <!-- Documento stilizzato -->
+  <rect x="140" y="90" width="232" height="290" rx="18" fill="#f5f4f0"/>
+  <!-- Spirale/Rilegatura -->
+  <rect x="124" y="90" width="32" height="290" rx="10" fill="#888780"/>
+  <!-- Linee testo -->
+  <rect x="182" y="148" width="148" height="14" rx="7" fill="#d3d1c7"/>
+  <rect x="182" y="182" width="120" height="14" rx="7" fill="#d3d1c7"/>
+  <rect x="182" y="216" width="138" height="14" rx="7" fill="#d3d1c7"/>
+  <rect x="182" y="250" width="100" height="14" rx="7" fill="#d3d1c7"/>
+  <!-- Riga evidenziata (ore) -->
+  <rect x="182" y="286" width="148" height="18" rx="9" fill="#4a90d9" opacity="0.7"/>
+  <!-- Simbolo orologio in basso a destra -->
+  <circle cx="368" cy="368" r="72" fill="#1a1a18"/>
+  <circle cx="368" cy="368" r="68" fill="#f0a500"/>
+  <circle cx="368" cy="368" r="58" fill="#1a1a18"/>
+  <line x1="368" y1="330" x2="368" y2="368" stroke="#f5f4f0" stroke-width="7" stroke-linecap="round"/>
+  <line x1="368" y1="368" x2="395" y2="385" stroke="#f5f4f0" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="368" cy="368" r="5" fill="#f0a500"/>
+</svg>
