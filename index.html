@@ -382,11 +382,6 @@ tr:hover td{background:#fafaf8;}
         <button class="btn btn-s btn-p" onclick="calcolaRiepilogo()">Calcola</button>
         <button class="btn btn-s" onclick="resetFiltriTrasf()">Reset</button>
       </div>
-      <div class="sec-lbl">Presenza</div>
-      <div id="trasfPieWrap" style="max-width:280px;margin:0 auto 16px auto;position:relative">
-        <canvas id="chartTrasfPie" height="220"></canvas>
-        <div id="trasfPieLegend" style="text-align:center;font-size:13px;margin-top:6px"></div>
-      </div>
       <div class="sec-lbl">Riepilogo Trasferte</div>
       <div id="riepilogoTrasferte"></div>
       <div class="sec-lbl">Riepilogo Spese Effettive</div>
@@ -701,11 +696,11 @@ tr:hover td{background:#fafaf8;}
     <div class="ph"><h2>Dati</h2></div>
     <div class="pb">
       <div class="set-row">
-        <div class="set-info"><h3>Esporta archivio</h3><p>Scarica tutti i record in JSON</p></div>
+        <div class="set-info"><h3>Esporta backup</h3><p>Scarica registri, impostazioni e PIN in un file JSON</p></div>
         <button class="btn btn-s" onclick="esporta()">📥 Esporta</button>
       </div>
       <div class="set-row">
-        <div class="set-info"><h3>Importa da file JSON</h3><p>Seleziona il file .json esportato</p></div>
+        <div class="set-info"><h3>Importa backup</h3><p>Ripristina da un file .json esportato</p></div>
         <label for="fileInput" class="btn btn-s" style="cursor:pointer;display:inline-block;">📂 Scegli file</label>
       </div>
       <input type="file" id="fileInput" accept=".json,application/json" style="display:none;" onchange="leggiFile(this)">
@@ -743,6 +738,16 @@ tr:hover td{background:#fafaf8;}
 var DB_KEY  = 'rl_db_v3';
 var CFG_KEY = 'rl_cfg_v3';
 var MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+
+// ── DATE HELPERS (usa l'ora LOCALE, evita lo slittamento di toISOString in UTC) ──
+function fmtData(d) {
+  return d.getFullYear() + '-' +
+         String(d.getMonth()+1).padStart(2,'0') + '-' +
+         String(d.getDate()).padStart(2,'0');
+}
+function fmtMese(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
 
 // ── STORAGE ──
 function db() { try { var d = localStorage.getItem(DB_KEY); return d ? JSON.parse(d) : []; } catch(e) { return []; } }
@@ -787,7 +792,7 @@ function aggiornaHome() {
   var gg = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
   document.getElementById('hdrSub').textContent = now.toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'});
   document.getElementById('homeDay').textContent = gg[now.getDay()]+' '+now.getDate()+' '+MESI[now.getMonth()]+' '+now.getFullYear();
-  var mese = now.toISOString().slice(0,7);
+  var mese = fmtMese(now);
   var rows = db().filter(function(r){ return r.data && r.data.startsWith(mese); });
   var ore = rows.reduce(function(s,r){ return s+(r.ore_tot||0); },0);
   var stra = rows.reduce(function(s,r){ return s+(r.ore_stra||0); },0);
@@ -1012,7 +1017,7 @@ function salva() {
 
 function resetForm() {
   ['fCliente','fMatDa','fMatA','fPomDa','fPomA','fOrd','fStra','spesaPranzo','spesaCena','fKm','permessi','fCodici','fNote'].forEach(function(id){ document.getElementById(id).value=''; });
-  document.getElementById('fData').value=new Date().toISOString().split('T')[0];
+  document.getElementById('fData').value=fmtData(new Date());
   document.getElementById('fCliente').disabled = false;
   document.getElementById('permessi').disabled = false;
   document.getElementById('permessi').closest('.permessi-row').style.opacity = '1';
@@ -1042,7 +1047,7 @@ function initVisualizza() {
 function renderStats() {
   try {
   var filtEl = document.getElementById('filtMese');
-  var mese = (filtEl && filtEl.value) ? filtEl.value : new Date().toISOString().slice(0,7);
+  var mese = (filtEl && filtEl.value) ? filtEl.value : fmtMese(new Date());
   var filtCliEl = document.getElementById('filtCliente');
   var cli = (filtCliEl ? filtCliEl.value||'' : '').toLowerCase();
   var rows = db().filter(function(r){
@@ -1077,10 +1082,10 @@ function subView(v) {
 }
 
 function resetFiltri() {
-  document.getElementById('filtMese').value=new Date().toISOString().slice(0,7);
+  document.getElementById('filtMese').value=fmtMese(new Date());
   document.getElementById('filtCliente').value='';
   var sel=document.getElementById('visMeseRapido');
-  if(sel) sel.value=new Date().toISOString().slice(0,7);
+  if(sel) sel.value=fmtMese(new Date());
   renderLista();
 }
 
@@ -1090,7 +1095,7 @@ function popolaMesiVis() {
   var mesiPresenti = {};
   db().forEach(function(r){ if(r.data) mesiPresenti[r.data.slice(0,7)] = true; });
   var mesiOrd = Object.keys(mesiPresenti).sort().reverse();
-  var curMese = new Date().toISOString().slice(0,7);
+  var curMese = fmtMese(new Date());
   sel.innerHTML = '<option value="">— scegli un mese —</option>';
   mesiOrd.forEach(function(m){
     var p = m.split('-');
@@ -1245,8 +1250,8 @@ function calcolaRiepilogo() {
     var now = new Date();
     var primoGiorno = new Date(now.getFullYear(), now.getMonth(), 1);
     var ultimoGiorno = new Date(now.getFullYear(), now.getMonth()+1, 0);
-    dataDa = primoGiorno.toISOString().split('T')[0];
-    dataA  = ultimoGiorno.toISOString().split('T')[0];
+    dataDa = fmtData(primoGiorno);
+    dataA  = fmtData(ultimoGiorno);
     document.getElementById('filtTrasfDa').value = dataDa;
     document.getElementById('filtTrasfA').value  = dataA;
   }
@@ -1298,44 +1303,6 @@ function calcolaRiepilogo() {
     '<div class="res-row"><span><b>📊 Totale KM percorsi</b></span><span><b>'+totKm+' km</b></span></div>';
 
   var netto=totTrasf-totSpese;
-
-  // ── Torta Azienda vs Fuori ──
-  var giorniTot = records.filter(function(r){
-    return (r.ore_tot||0)>0 || (r.malattia||0)>0 || (r.ferie||0)>0 || (r.permessi||0)>0;
-  }).length;
-  var giornaFuori = records.filter(function(r){
-    var t = r.trasferte;
-    if(!t) return false;
-    if(typeof t==='number') return t>0;
-    return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena;
-  }).length;
-  var giorniAzienda = giorniTot - giornaFuori;
-  var pieWrap = document.getElementById('trasfPieWrap');
-  if(window.Chart && giorniTot > 0){
-    pieWrap.style.display='block';
-    var ctxPie = document.getElementById('chartTrasfPie').getContext('2d');
-    if(chartTrasfPieInst) chartTrasfPieInst.destroy();
-    chartTrasfPieInst = new Chart(ctxPie, {
-      type: 'pie',
-      data: {
-        labels: ['In azienda', 'Fuori sede'],
-        datasets: [{ data: [giorniAzienda, giornaFuori], backgroundColor: ['#4a90d9','#f0a500'], hoverOffset: 6 }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { position: 'bottom' },
-          tooltip: { callbacks: { label: function(ctx){ return ctx.label+': '+ctx.raw+' gg'; } } }
-        }
-      }
-    });
-    document.getElementById('trasfPieLegend').innerHTML =
-      '<span style="color:#4a90d9;font-weight:700">'+giorniAzienda+'</span> in azienda &nbsp;·&nbsp; '+
-      '<span style="color:#f0a500;font-weight:700">'+giornaFuori+'</span> fuori sede &nbsp;·&nbsp; '+
-      '<span style="color:#5f5e5a">'+giorniTot+' tot</span>';
-  } else {
-    if(pieWrap) pieWrap.style.display = giorniTot>0 ? 'block' : 'none';
-  }
   document.getElementById('totaleComplessivo').innerHTML=
     '<div class="busta-final"><div class="res-row" style="border:none"><span><b>Trasferte − Spese Effettive</b></span><span><b>'+netto.toFixed(2)+' €</b></span></div></div>';
 }
@@ -1358,8 +1325,8 @@ function selezionaMeseTrasferte() {
   var p = val.split('-');
   var primo  = new Date(parseInt(p[0]), parseInt(p[1])-1, 1);
   var ultimo = new Date(parseInt(p[0]), parseInt(p[1]), 0);
-  document.getElementById('filtTrasfDa').value = primo.toISOString().split('T')[0];
-  document.getElementById('filtTrasfA').value  = ultimo.toISOString().split('T')[0];
+  document.getElementById('filtTrasfDa').value = fmtData(primo);
+  document.getElementById('filtTrasfA').value  = fmtData(ultimo);
   calcolaRiepilogo();
 }
 
@@ -1563,9 +1530,9 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
     return new Date(year,month-1,day);
   }
   var easterB = getEasterB(annoMese);
-  var easterBStr = easterB.toISOString().slice(0,10);
+  var easterBStr = fmtData(easterB);
   var easterMondayB = new Date(easterB); easterMondayB.setDate(easterB.getDate()+1);
-  var easterMondayBStr = easterMondayB.toISOString().slice(0,10);
+  var easterMondayBStr = fmtData(easterMondayB);
   function isFestivoBusta(dateStr) {
     var mmdd = dateStr.slice(5);
     if(FESTIVI_FISSI_B.indexOf(mmdd) !== -1) return true;
@@ -1888,27 +1855,61 @@ function annullaImport() {
 function importa() {
   var raw=document.getElementById('importJson').value.trim();
   if(!raw){ toast('⚠ Nessun dato da importare'); return; }
+  var parsed;
   try {
-    var items=JSON.parse(raw);
-    if(!Array.isArray(items)) throw new Error('non array');
+    parsed=JSON.parse(raw);
+  } catch(e) { toast('⚠ Errore: file JSON non valido'); return; }
+
+  // Backup COMPLETO (nuovo formato): { registri, impostazioni, pin }
+  if(parsed && !Array.isArray(parsed) && parsed.tipo === 'registro-lavoro-backup') {
+    if(!confirm('Ripristinare il backup completo?\n\nQuesto SOSTITUISCE registri e impostazioni attuali con quelli del file.')) return;
+    var registri = Array.isArray(parsed.registri) ? parsed.registri : [];
+    saveDb(registri);
+    if(parsed.impostazioni && typeof parsed.impostazioni === 'object') saveCfg(parsed.impostazioni);
+    if(parsed.pin) { localStorage.setItem('rl_pin', parsed.pin); }
+    else { localStorage.removeItem('rl_pin'); }
+    document.getElementById('importJson').value='';
+    document.getElementById('fileLabel').textContent='Nessun file selezionato';
+    document.getElementById('fileInput').value='';
+    toggleImport();
+    toast('✓ Backup ripristinato ('+registri.length+' record + impostazioni)');
+    aggiornaHome();
+    initImpostazioni();
+    return;
+  }
+
+  // Vecchio formato: lista di soli registri → aggiunge ai dati esistenti
+  if(Array.isArray(parsed)) {
     var d=db();
-    items.forEach(function(r){ d.push(r); });
+    parsed.forEach(function(r){ d.push(r); });
     saveDb(d);
     document.getElementById('importJson').value='';
     document.getElementById('fileLabel').textContent='Nessun file selezionato';
     document.getElementById('fileInput').value='';
     toggleImport();
-    toast('✓ Importati '+items.length+' record');
+    toast('✓ Importati '+parsed.length+' record');
     aggiornaHome();
     initImpostazioni();
-  } catch(e) { toast('⚠ Errore: file JSON non valido'); }
+    return;
+  }
+
+  toast('⚠ Formato file non riconosciuto');
 }
 
 function esporta() {
-  var blob=new Blob([JSON.stringify(db(),null,2)],{type:'application/json'});
+  // Backup COMPLETO: registri + impostazioni + PIN
+  var backup = {
+    tipo: 'registro-lavoro-backup',
+    versione: 1,
+    data: fmtData(new Date()),
+    registri: db(),
+    impostazioni: cfg(),
+    pin: localStorage.getItem('rl_pin') || null
+  };
+  var blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
   var a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='registro_lavoro_'+new Date().toISOString().slice(0,10)+'.json';
+  a.download='registro_lavoro_'+fmtData(new Date())+'.json';
   a.click();
 }
 
@@ -1934,7 +1935,6 @@ function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repla
 var chartOreInst = null;
 var chartDonutInst = null;
 var chartKmInst   = null;
-var chartTrasfPieInst = null;
 
 function initGrafici() {
   // popola select mesi basandosi sui dati presenti
@@ -1952,8 +1952,8 @@ function initGrafici() {
   var now = new Date();
   var primoGiorno = new Date(now.getFullYear(), now.getMonth(), 1);
   var ultimoGiorno = new Date(now.getFullYear(), now.getMonth()+1, 0);
-  document.getElementById('grafDa').value = primoGiorno.toISOString().split('T')[0];
-  document.getElementById('grafA').value  = ultimoGiorno.toISOString().split('T')[0];
+  document.getElementById('grafDa').value = fmtData(primoGiorno);
+  document.getElementById('grafA').value  = fmtData(ultimoGiorno);
   aggiornaGrafici();
 }
 
@@ -1964,8 +1964,8 @@ function selezionaMeseRapido() {
   var anno = parseInt(p[0]), mese = parseInt(p[1])-1;
   var primo = new Date(anno, mese, 1);
   var ultimo = new Date(anno, mese+1, 0);
-  document.getElementById('grafDa').value = primo.toISOString().split('T')[0];
-  document.getElementById('grafA').value  = ultimo.toISOString().split('T')[0];
+  document.getElementById('grafDa').value = fmtData(primo);
+  document.getElementById('grafA').value  = fmtData(ultimo);
   aggiornaGrafici();
 }
 
@@ -1973,8 +1973,8 @@ function resetPeriodoGrafici() {
   var now = new Date();
   var primoGiorno = new Date(now.getFullYear(), now.getMonth(), 1);
   var ultimoGiorno = new Date(now.getFullYear(), now.getMonth()+1, 0);
-  document.getElementById('grafDa').value = primoGiorno.toISOString().split('T')[0];
-  document.getElementById('grafA').value  = ultimoGiorno.toISOString().split('T')[0];
+  document.getElementById('grafDa').value = fmtData(primoGiorno);
+  document.getElementById('grafA').value  = fmtData(ultimoGiorno);
   aggiornaGrafici();
 }
 
@@ -2100,27 +2100,9 @@ function aggiornaGrafici() {
     return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena;
   }).length;
   var tetto  = c.tetto_trasferte || 40;
-  // Calcolo esente corretto: per ogni giorno con trasferta, min(rimborso_gg, tetto)
-  var esenteTot = 0, tassabileTot = 0;
-  records.forEach(function(r){
-    var t = r.trasferte||{};
-    var hasTrasf = (typeof t==='number'&&t>0) ||
-      (t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena);
-    if(!hasTrasf) return;
-    var rimGg = 0;
-    if(typeof t==='number'){ rimGg = t>0 ? (c.rimborso_nostro_pranzo||0) : 0; }
-    else {
-      if(t.clientePranzo) rimGg += (c.rimborso_cliente_pranzo||0);
-      if(t.clienteCena)   rimGg += (c.rimborso_cliente_cena||0);
-      if(t.nostroPranzo)  rimGg += (c.rimborso_nostro_pranzo||0);
-      if(t.nostroCena)    rimGg += (c.rimborso_nostro_cena||0);
-      if(t.esteroPranzo)  rimGg += (c.rimborso_estero_pranzo||40);
-      if(t.esteroCena)    rimGg += (c.rimborso_estero_cena||50);
-    }
-    esenteTot    += Math.min(rimGg, tetto);
-    tassabileTot += Math.max(0, rimGg - tetto);
-  });
-  var totAssOre = totMal + totFer + totPer;
+  var esenteTot = giorniConTrasf>0 ? Math.min(rimTot/giorniConTrasf, tetto)*giorniConTrasf : 0;
+  var tassabileTot = Math.max(0, rimTot - esenteTot);
+  var totAssOre = totMal + totFer;
   var impOrd  = totOrd  * (c.paga||0);
   var impStra = totStra * (c.paga_stra||0);
   var impAss  = totAssOre * (c.paga||0);
@@ -2134,7 +2116,7 @@ function aggiornaGrafici() {
   // Festivi per il preventivo
   var FEST=['01-01','01-06','04-25','05-01','06-02','08-15','11-01','12-08','12-25','12-26'];
   function easterG(yr){var a=yr%19,b=Math.floor(yr/100),cv=yr%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(cv/4),k=cv%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),dy=((h+l-7*m+114)%31)+1;return new Date(yr,mo-1,dy);}
-  function festG(ds){var mmdd=ds.slice(5);if(FEST.indexOf(mmdd)!==-1)return true;var yr=parseInt(ds.slice(0,4));var ep=easterG(yr);var epS=ep.toISOString().slice(0,10);var em=new Date(ep);em.setDate(ep.getDate()+1);if(ds===epS||ds===em.toISOString().slice(0,10))return true;return false;}
+  function festG(ds){var mmdd=ds.slice(5);if(FEST.indexOf(mmdd)!==-1)return true;var yr=parseInt(ds.slice(0,4));var ep=easterG(yr);var epS=fmtData(ep);var em=new Date(ep);em.setDate(ep.getDate()+1);if(ds===epS||ds===fmtData(em))return true;return false;}
 
   // Capisce se il periodo è un mese intero
   var oggi2 = new Date();
@@ -2188,7 +2170,7 @@ function aggiornaGrafici() {
     // Calcola giorni lavorativi totali del mese
     var totLavM=0, oreStd=c.ore_std||8;
     var ultimoM=new Date(annoM,meseM+1,0).getDate();
-    var dataOggiS=oggi2.toISOString().slice(0,10);
+    var dataOggiS=fmtData(oggi2);
     var giorniRim=0;
     for(var gx=1;gx<=ultimoM;gx++){
       var ds=annoM+'-'+String(meseM+1).padStart(2,'0')+'-'+String(gx).padStart(2,'0');
@@ -2595,7 +2577,7 @@ function popolaBustaMesi() {
     var opt = document.createElement('option');
     opt.value = m; opt.textContent = lbl;
     // seleziona il mese corrente
-    if(m === new Date().toISOString().slice(0,7)) opt.selected = true;
+    if(m === fmtMese(new Date())) opt.selected = true;
     sel.appendChild(opt);
   });
 }
@@ -2609,9 +2591,9 @@ function selezionaMeseBusta() {
 
 function initBusta() {
   popolaBustaMesi();
-  document.getElementById('bustaMese').value = new Date().toISOString().slice(0,7);
+  document.getElementById('bustaMese').value = fmtMese(new Date());
   // sync select to current month
-  var curMese = new Date().toISOString().slice(0,7);
+  var curMese = fmtMese(new Date());
   var sel = document.getElementById('bustaMeseRapido');
   if(sel) sel.value = curMese;
   var pin = localStorage.getItem('rl_pin');
@@ -2733,9 +2715,9 @@ function rimuoviPin() {
   } catch(e) {}
 
   function setVal(id, val) { var el=document.getElementById(id); if(el) el.value=val; }
-  setVal('fData', new Date().toISOString().split('T')[0]);
-  setVal('filtMese', new Date().toISOString().slice(0,7));
-  setVal('bustaMese', new Date().toISOString().slice(0,7));
+  setVal('fData', fmtData(new Date()));
+  setVal('filtMese', fmtMese(new Date()));
+  setVal('bustaMese', fmtMese(new Date()));
   try { aggiornaHome(); } catch(e) { console.error('init error:', e); }
 })();
 </script>
