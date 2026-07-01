@@ -126,11 +126,12 @@ tr:hover td{background:#fafaf8;}
 .bdg-p{background:#f0e6f5;color:#6a2d8f;}
 
 /* SETTINGS */
-.set-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid #f0efeb;gap:12px;flex-wrap:wrap;}
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid #f0efeb;gap:10px;}
 .set-row:last-child{border-bottom:none;}
+.set-info{flex:1;min-width:0;}
 .set-info h3{font-size:14px;font-weight:500;margin-bottom:2px;}
 .set-info p{font-size:12px;color:#888;}
-.set-row input{width:140px!important;padding:8px 12px;border:1px solid #d3d1c7;border-radius:6px;font-size:14px;font-family:inherit;}
+.set-row input{width:120px;flex:none;padding:8px 12px;border:1px solid #d3d1c7;border-radius:6px;font-size:14px;font-family:inherit;}
 
 /* RIEPILOGO / BUSTA */
 .res-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;font-size:14px;}
@@ -641,8 +642,8 @@ tr:hover td{background:#fafaf8;}
       <div class="set-row"><div class="set-info"><h3>Paga €/ora straordinaria</h3><p>Maggiore della paga base</p></div><input type="number" id="setPagaStra" step="0.01" min="0"></div>
       <div class="set-row"><div class="set-info"><h3>Trattenuta INPS %</h3><p>Percentuale contributi</p></div><input type="number" id="setInps" step="0.01" min="0" max="100"></div>
       <div class="set-row"><div class="set-info"><h3>Trattenuta IRPEF %</h3><p>Percentuale imposta</p></div><input type="number" id="setIrpef" step="0.01" min="0" max="100"></div>
-      <div class="set-row"><div class="set-info"><h3>Add. regionale (€/mese)</h3><p>Rata mensile IRPEF regionale (dalla busta)</p></div><input type="number" id="setAddizReg" step="0.01" min="0"></div>
-      <div class="set-row"><div class="set-info"><h3>Add. comunale (€/mese)</h3><p>Rata + acconto comunale sommati (dalla busta)</p></div><input type="number" id="setAddizCom" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Add. regionale (€)</h3><p>Rata mensile, dalla busta</p></div><input type="number" id="setAddizReg" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Add. comunale (€)</h3><p>Rata + acconto sommati</p></div><input type="number" id="setAddizCom" step="0.01" min="0"></div>
       <div class="set-row"><div class="set-info"><h3>Tetto trasferte (€/gg)</h3><p>Importo giornaliero esente</p></div><input type="number" id="setTettoTrasf" step="0.5" min="0"></div>
       <div class="set-row"><div class="set-info"><h3>Premio produttività (€/ora)</h3><p>Trimestrale: mar/giu/set/dic</p></div><input type="number" id="setPremio" step="0.01" min="0"></div>
     </div>
