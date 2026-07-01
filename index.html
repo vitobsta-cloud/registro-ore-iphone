@@ -641,6 +641,8 @@ tr:hover td{background:#fafaf8;}
       <div class="set-row"><div class="set-info"><h3>Paga €/ora straordinaria</h3><p>Maggiore della paga base</p></div><input type="number" id="setPagaStra" step="0.01" min="0"></div>
       <div class="set-row"><div class="set-info"><h3>Trattenuta INPS %</h3><p>Percentuale contributi</p></div><input type="number" id="setInps" step="0.01" min="0" max="100"></div>
       <div class="set-row"><div class="set-info"><h3>Trattenuta IRPEF %</h3><p>Percentuale imposta</p></div><input type="number" id="setIrpef" step="0.01" min="0" max="100"></div>
+      <div class="set-row"><div class="set-info"><h3>Add. regionale (€/mese)</h3><p>Rata mensile IRPEF regionale (dalla busta)</p></div><input type="number" id="setAddizReg" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Add. comunale (€/mese)</h3><p>Rata + acconto comunale sommati (dalla busta)</p></div><input type="number" id="setAddizCom" step="0.01" min="0"></div>
       <div class="set-row"><div class="set-info"><h3>Tetto trasferte (€/gg)</h3><p>Importo giornaliero esente</p></div><input type="number" id="setTettoTrasf" step="0.5" min="0"></div>
       <div class="set-row"><div class="set-info"><h3>Premio produttività (€/ora)</h3><p>Trimestrale: mar/giu/set/dic</p></div><input type="number" id="setPremio" step="0.01" min="0"></div>
     </div>
@@ -757,7 +759,8 @@ function cfg() {
     rimborso_cliente_pranzo:25, rimborso_cliente_cena:30,
     rimborso_nostro_pranzo:25, rimborso_nostro_cena:30,
     rimborso_estero_pranzo:40, rimborso_estero_cena:50,
-    tetto_trasferte:40, premio_produttivita:0 };
+    tetto_trasferte:40, premio_produttivita:0,
+    addiz_regionale:0, addiz_comunale:0 };
   try { var s = localStorage.getItem(CFG_KEY); return s ? Object.assign(def, JSON.parse(s)) : def; }
   catch(e) { return def; }
 }
@@ -1418,7 +1421,10 @@ function calcolaBusta() {
   var lordo   = impOrd + impStra + impAss + impPerm + totTassabile;
   var inps    = lordo * ((cf.inps  || 0) / 100);
   var irpef   = (lordo - inps) * ((cf.irpef || 0) / 100);
-  var netto   = lordo - inps - irpef + totEsente; // aggiungi le esenti al netto finale
+  var addizReg = cf.addiz_regionale || 0;
+  var addizCom = cf.addiz_comunale  || 0;
+  var addizTot = addizReg + addizCom; // trattenute mensili fisse (dalla busta)
+  var netto   = lordo - inps - irpef - addizTot + totEsente; // aggiungi le esenti al netto finale
   var spese   = spP + spC;
   var nettoSpese = netto - spese;
 
@@ -1489,6 +1495,8 @@ function calcolaBusta() {
     '<div class="res-row" style="border-top:1.5px solid #e0e0e0;margin-top:6px;padding-top:10px"><span><b>Totale Lordo</b></span><span><b>' + lordo.toFixed(2) + ' €</b></span></div>' +
     '<div class="res-row"><span>INPS (' + (cf.inps||0) + '%)</span><span style="color:#a32d2d">− ' + inps.toFixed(2) + ' €</span></div>' +
     '<div class="res-row"><span>IRPEF (' + (cf.irpef||0) + '%)</span><span style="color:#a32d2d">− ' + irpef.toFixed(2) + ' €</span></div>' +
+    (addizReg > 0 ? '<div class="res-row"><span>Add. regionale</span><span style="color:#a32d2d">− ' + addizReg.toFixed(2) + ' €</span></div>' : '') +
+    (addizCom > 0 ? '<div class="res-row"><span>Add. comunale</span><span style="color:#a32d2d">− ' + addizCom.toFixed(2) + ' €</span></div>' : '') +
     '<div class="busta-highlight" style="margin-top:10px"><div class="res-row" style="border:none"><span><b>Stimato Netto in Busta</b></span><span><b>' + netto.toFixed(2) + ' €</b></span></div></div>' +
 
     (premioProdImporto > 0 ?
@@ -1517,6 +1525,9 @@ function calcolaBusta() {
 
 function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, eC, assenzeGia, permessiGia, records) {
   var oggi = new Date();
+  var addizReg = cf.addiz_regionale || 0;
+  var addizCom = cf.addiz_comunale  || 0;
+  var addizTot = addizReg + addizCom; // trattenute mensili fisse (dalla busta)
   var mp = mese.split('-');
   var annoMese = parseInt(mp[0]), meseMese = parseInt(mp[1]) - 1;
   var meseCorrente = (oggi.getFullYear() === annoMese && oggi.getMonth() === meseMese);
@@ -1628,7 +1639,7 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
     var lordoTotM  = lordoGia2 + impOrdMancanti;
     var inpsTotM   = lordoTotM * ((cf.inps||0)/100);
     var irpefTotM  = (lordoTotM - inpsTotM) * ((cf.irpef||0)/100);
-    var nettoTotM  = lordoTotM - inpsTotM - irpefTotM + esente2;
+    var nettoTotM  = lordoTotM - inpsTotM - irpefTotM - addizTot + esente2;
 
     el.innerHTML =
       '<div style="background:#fff8e1;border:1.5px solid #f5c842;border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start">' +
@@ -1657,6 +1668,7 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
         '<div class="res-row" style="border-color:#333"><span style="color:#aaa">Lordo totale</span><span style="color:#f5f4f0"><b>' + lordoTotM.toFixed(2) + ' €</b></span></div>' +
         '<div class="res-row" style="border-color:#333"><span style="color:#a87">INPS (' + (cf.inps||0) + '%)</span><span style="color:#e09090">− ' + inpsTotM.toFixed(2) + ' €</span></div>' +
         '<div class="res-row" style="border-color:#333"><span style="color:#a87">IRPEF (' + (cf.irpef||0) + '%)</span><span style="color:#e09090">− ' + irpefTotM.toFixed(2) + ' €</span></div>' +
+        (addizTot > 0 ? '<div class="res-row" style="border-color:#333"><span style="color:#a87">Addizionali (reg.+com.)</span><span style="color:#e09090">− ' + addizTot.toFixed(2) + ' €</span></div>' : '') +
         '<div style="border-top:1px solid #444;margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">' +
           '<span style="color:#f5f4f0;font-weight:600;font-size:14px">Netto stimato totale</span>' +
           '<span style="color:#f5c842;font-size:20px;font-weight:700">' + nettoTotM.toFixed(2) + ' €</span>' +
@@ -1672,7 +1684,7 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
     var lordoFut  = impOrdFut;
     var inpsFut   = lordoFut * ((cf.inps||0)/100);
     var irpefFut  = (lordoFut - inpsFut) * ((cf.irpef||0)/100);
-    var nettoFut  = lordoFut - inpsFut - irpefFut;
+    var nettoFut  = lordoFut - inpsFut - irpefFut - addizTot;
     el.innerHTML =
       '<div style="background:#e6f1fb;border-radius:10px;padding:14px 16px;margin-bottom:10px">' +
         '<div style="font-size:11px;font-weight:600;color:#185fa5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Previsione mese futuro</div>' +
@@ -1681,7 +1693,7 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
           '<div class="stat"><div class="stat-l">Ore previste</div><div class="stat-v">' + oreRimanenti.toFixed(0) + 'h</div><div class="stat-s">' + giorniRimanenti + ' × ' + (cf.ore_std||8) + 'h</div></div>' +
           '<div class="stat"><div class="stat-l">Netto stimato</div><div class="stat-v" style="color:#185fa5">' + nettoFut.toFixed(2) + ' €</div></div>' +
         '</div>' +
-        '<div style="font-size:11px;color:#5f8ab4">Solo ore ordinarie. Straordinari e trasferte non stimati.</div>' +
+        '<div style="font-size:11px;color:#5f8ab4">Solo ore ordinarie. Straordinari e trasferte non stimati.' + (addizTot>0 ? ' Addizionali (−' + addizTot.toFixed(2) + ' €) già detratte.' : '') + '</div>' +
       '</div>';
     return;
   }
@@ -1716,8 +1728,10 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
   var giorniConTrasfRim = Math.round(
     (giorniConTrasfGia > 0 ? giorniConTrasfGia/Math.max(giorniGia,1) : 0) * giorniRimanenti
   );
-  var esenteRim    = giorniConTrasfRim > 0 ? Math.min(rimStimatiTot/Math.max(giorniConTrasfRim,1), tetto2)*giorniConTrasfRim : 0;
-  var tassabileRim = Math.max(0, rimStimatiTot - esenteRim);
+  // Le TRASFERTE non si proiettano: nel preventivo contano solo quelle GIA' inserite.
+  // Per i giorni rimanenti si stimano soltanto le ore ordinarie.
+  var esenteRim    = 0;
+  var tassabileRim = 0;
   var lordoRim2    = impOrdRim + tassabileRim;
   var inpsRim2     = lordoRim2 * ((cf.inps||0)/100);
   var irpefRim2    = (lordoRim2 - inpsRim2) * ((cf.irpef||0)/100);
@@ -1728,7 +1742,7 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
   var esenteTot    = esenteGia + esenteRim;
   var inpsTot      = lordoTotBase * ((cf.inps||0)/100);
   var irpefTot     = (lordoTotBase - inpsTot) * ((cf.irpef||0)/100);
-  var nettoTot     = lordoTotBase - inpsTot - irpefTot + esenteTot;
+  var nettoTot     = lordoTotBase - inpsTot - irpefTot - addizTot + esenteTot;
   var lordoTot     = lordoTotBase; // lordo tassabile (senza quota esente)
   var oreTot       = (oreOrdGia + oreStraGia) + oreRimanenti;
 
@@ -1773,6 +1787,7 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
       (esenteTot > 0 ? '<div class="res-row" style="border-color:#333"><span style="color:#81c784">+ Quota esente trasferte</span><span style="color:#81c784">+ ' + esenteTot.toFixed(2) + ' €</span></div>' : '') +
       '<div class="res-row" style="border-color:#333"><span style="color:#a87">INPS (' + (cf.inps||0) + '%)</span><span style="color:#e09090">− ' + inpsTot.toFixed(2) + ' €</span></div>' +
       '<div class="res-row" style="border-color:#333"><span style="color:#a87">IRPEF (' + (cf.irpef||0) + '%)</span><span style="color:#e09090">− ' + irpefTot.toFixed(2) + ' €</span></div>' +
+      (addizTot > 0 ? '<div class="res-row" style="border-color:#333"><span style="color:#a87">Addizionali (reg.+com.)</span><span style="color:#e09090">− ' + addizTot.toFixed(2) + ' €</span></div>' : '') +
       '<div style="border-top:1px solid #444;margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">' +
         '<span style="color:#f5f4f0;font-weight:600;font-size:14px">Netto stimato a fine mese</span>' +
         '<span style="color:#f5c842;font-size:20px;font-weight:700">' + nettoTot.toFixed(2) + ' €</span>' +
@@ -1796,6 +1811,8 @@ function initImpostazioni() {
   document.getElementById('setPagaStra').value=c.paga_stra;
   document.getElementById('setInps').value=c.inps;
   document.getElementById('setIrpef').value=c.irpef;
+  var arEl=document.getElementById('setAddizReg'); if(arEl) arEl.value=c.addiz_regionale||0;
+  var acEl=document.getElementById('setAddizCom'); if(acEl) acEl.value=c.addiz_comunale||0;
   document.getElementById('setRimborsoClientePranzo').value=c.rimborso_cliente_pranzo;
   document.getElementById('setRimborsoClienteCena').value=c.rimborso_cliente_cena;
   document.getElementById('setRimborsoNostroPranzo').value=c.rimborso_nostro_pranzo;
@@ -1814,6 +1831,8 @@ function salvaImpostazioni() {
     paga_stra: parseFloat(document.getElementById('setPagaStra').value)||0,
     inps:    parseFloat(document.getElementById('setInps').value)||0,
     irpef:   parseFloat(document.getElementById('setIrpef').value)||0,
+    addiz_regionale: parseFloat(document.getElementById('setAddizReg').value)||0,
+    addiz_comunale:  parseFloat(document.getElementById('setAddizCom').value)||0,
     rimborso_cliente_pranzo: parseFloat(document.getElementById('setRimborsoClientePranzo').value)||0,
     rimborso_cliente_cena:   parseFloat(document.getElementById('setRimborsoClienteCena').value)||0,
     rimborso_nostro_pranzo:  parseFloat(document.getElementById('setRimborsoNostroPranzo').value)||0,
