@@ -2129,7 +2129,10 @@ function aggiornaGrafici() {
   var lordo   = impOrd + impStra + impAss + tassabileTot;
   var inps    = lordo * ((c.inps||0)/100);
   var irpef   = (lordo-inps) * ((c.irpef||0)/100);
-  var netto   = lordo - inps - irpef + esenteTot;
+  var addizRegC = c.addiz_regionale || 0;
+  var addizComC = c.addiz_comunale  || 0;
+  var addizTotC = addizRegC + addizComC; // trattenute mensili fisse
+  var netto   = lordo - inps - irpef - addizTotC + esenteTot;
   var spese   = records.reduce(function(s,r){return s+(r.spesa_pranzo||0)+(r.spesa_cena||0);},0);
   var giorniGia = records.filter(function(r){return (r.ore_tot||0)>0||(r.malattia||0)>0||(r.ferie||0)>0;}).length;
 
@@ -2176,6 +2179,8 @@ function aggiornaGrafici() {
     '<div class="res-row"><span>Totale Lordo</span><span><b>'+lordo.toFixed(2)+' €</b></span></div>'+
     '<div class="res-row"><span>INPS ('+c.inps+'%)</span><span style="color:#a32d2d">− '+inps.toFixed(2)+' €</span></div>'+
     '<div class="res-row"><span>IRPEF ('+c.irpef+'%)</span><span style="color:#a32d2d">− '+irpef.toFixed(2)+' €</span></div>'+
+    (addizRegC>0?'<div class="res-row"><span>Add. regionale</span><span style="color:#a32d2d">− '+addizRegC.toFixed(2)+' €</span></div>':'')+
+    (addizComC>0?'<div class="res-row"><span>Add. comunale</span><span style="color:#a32d2d">− '+addizComC.toFixed(2)+' €</span></div>':'')+
     '<div class="busta-highlight res-row res-tot" style="margin-top:8px"><span><b>Stimato Netto in Busta</b></span><span><b>'+netto.toFixed(2)+' €</b></span></div>'+
     (spese?'<div class="res-row" style="margin-top:6px"><span>Spese effettive (pranzo+cena)</span><span style="color:#a32d2d">− '+spese.toFixed(2)+' €</span></div>'+
       '<div class="busta-final"><div class="res-row" style="border:none"><span><b>Netto − Spese</b></span><span><b>'+(netto-spese).toFixed(2)+' €</b></span></div></div>':'');
@@ -2216,7 +2221,7 @@ function aggiornaGrafici() {
         var lordoTotM=lordo+impManc;
         var inpsTotM=lordoTotM*((c.inps||0)/100);
         var irpefTotM=(lordoTotM-inpsTotM)*((c.irpef||0)/100);
-        var nettoTotM=lordoTotM-inpsTotM-irpefTotM+esenteTot;
+        var nettoTotM=lordoTotM-inpsTotM-irpefTotM-addizTotC+esenteTot;
         htmlBusta+=
           '<div style="background:#fff8e1;border:1.5px solid #f5c842;border-radius:10px;padding:12px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start">'+
             '<span style="font-size:18px">⚠️</span>'+
