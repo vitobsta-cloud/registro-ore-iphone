@@ -2012,7 +2012,7 @@ function aggiornaGrafici() {
   if(!da || !a) { toast('Seleziona un periodo'); return; }
 
   var records = db().filter(function(r){
-    return r.data && r.data >= da && r.data <= a;
+    return r.manuale && r.data && r.data >= da && r.data <= a;
   }).sort(function(a,b){ return a.data.localeCompare(b.data); });
 
   // -- dati per grafico barre ore --
