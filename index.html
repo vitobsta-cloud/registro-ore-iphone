@@ -484,6 +484,13 @@ tr:hover td{background:#fafaf8;}
   </div>
 
   <div class="panel">
+    <div class="ph"><h2>Giornate (dove sei stato)</h2></div>
+    <div class="pb" style="padding:10px 8px;">
+      <canvas id="chartGiorni" height="220"></canvas>
+    </div>
+  </div>
+
+  <div class="panel">
     <div class="ph"><h2>KM per giorno</h2></div>
     <div class="pb" style="padding:10px 8px;">
       <canvas id="chartKm" height="180"></canvas>
@@ -1955,6 +1962,7 @@ function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repla
 var chartOreInst = null;
 var chartDonutInst = null;
 var chartKmInst   = null;
+var chartGiorniInst = null;
 
 function initGrafici() {
   // popola select mesi basandosi sui dati presenti
@@ -2062,6 +2070,44 @@ function aggiornaGrafici() {
       plugins: {
         legend: { position: 'bottom' },
         tooltip: { callbacks: { label: function(ctx){ return ctx.label+': '+ctx.raw.toFixed(1)+'h'; } } }
+      }
+    }
+  });
+
+  // ── Grafico a Torta Giornate (dove sei stato) ──
+  var ctxGiorni = document.getElementById('chartGiorni').getContext('2d');
+  if(chartGiorniInst) chartGiorniInst.destroy();
+  var gFuori=0, gDitta=0, gMal=0, gFer=0, gPerm=0;
+  records.forEach(function(r){
+    // ogni giorno conta una volta sola, per priorità
+    if((r.malattia||0) > 0){ gMal++; return; }
+    if((r.ferie||0) > 0){ gFer++; return; }
+    if((r.permessi||0) > 0 && (r.ore_tot||0) === 0){ gPerm++; return; }
+    if((r.ore_tot||0) > 0){
+      var t = r.trasferte||{};
+      var conTrasf = (typeof t==='number') ? t>0 :
+        (t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena);
+      if(conTrasf) gFuori++; else gDitta++;
+    }
+  });
+  var gVals   = [gFuori, gDitta, gMal, gFer, gPerm];
+  var gLabels = ['Fuori sede (interventi)','In ditta','Malattia','Ferie','Permessi'];
+  var gColors = ['#43a047','#f0a500','#e53935','#8e24aa','#4a90d9'];
+  var gTot = gVals.reduce(function(s,v){return s+v;},0);
+  var gValsF   = gVals.filter(function(v){return v>0;});
+  var gLabelsF = gLabels.filter(function(l,i){return gVals[i]>0;});
+  var gColorsF = gColors.filter(function(c,i){return gVals[i]>0;});
+  chartGiorniInst = new Chart(ctxGiorni, {
+    type: 'pie',
+    data: { labels: gLabelsF, datasets: [{ data: gValsF, backgroundColor: gColorsF, hoverOffset: 6 }] },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: { callbacks: { label: function(ctx){
+          var pct = gTot>0 ? Math.round(ctx.raw/gTot*100) : 0;
+          return ctx.label+': '+ctx.raw+(ctx.raw===1?' giorno':' giorni')+' ('+pct+'%)';
+        } } }
       }
     }
   });
