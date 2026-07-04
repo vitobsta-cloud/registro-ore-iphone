@@ -27,8 +27,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#eceff1;color:#1a1a1
 .hdr-title{font-size:17px;font-weight:600;flex:1;}
 .hdr-sub{font-size:12px;color:#888780;}
 .scr{display:none;max-width:640px;margin:0 auto;padding:28px 16px;}
-.scr.on{display:block;animation:scrFade .25s ease;}
-@keyframes scrFade{from{opacity:0;}to{opacity:1;}}
+.scr.on{display:block;animation:scrFade .42s cubic-bezier(.22,.61,.36,1);}
+@keyframes scrFade{from{opacity:0;transform:scale(.965);}to{opacity:1;transform:scale(1);}}
 @media (prefers-reduced-motion: reduce){.scr.on{animation:none;}}
 
 /* HOME */
