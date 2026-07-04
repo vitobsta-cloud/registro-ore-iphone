@@ -486,7 +486,8 @@ tr:hover td{background:#fafaf8;}
   <div class="panel">
     <div class="ph"><h2>Giornate (dove sei stato)</h2></div>
     <div class="pb" style="padding:10px 8px;">
-      <canvas id="chartGiorni" height="220"></canvas>
+      <canvas id="chartGiorni" height="170" style="max-height:190px"></canvas>
+      <div id="badgeGiorni" style="display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:12px;"></div>
     </div>
   </div>
 
@@ -2092,7 +2093,7 @@ function aggiornaGrafici() {
   });
   var gVals   = [gFuori, gDitta, gMal, gFer, gPerm];
   var gLabels = ['Fuori sede (interventi)','In ditta','Malattia','Ferie','Permessi'];
-  var gColors = ['#43a047','#f0a500','#e53935','#8e24aa','#4a90d9'];
+  var gColors = ['#43a047','#f0a500','#e53935','#29b6f6','#4a90d9'];
   var gTot = gVals.reduce(function(s,v){return s+v;},0);
   var gValsF   = gVals.filter(function(v){return v>0;});
   var gLabelsF = gLabels.filter(function(l,i){return gVals[i]>0;});
@@ -2102,8 +2103,9 @@ function aggiornaGrafici() {
     data: { labels: gLabelsF, datasets: [{ data: gValsF, backgroundColor: gColorsF, hoverOffset: 6 }] },
     options: {
       responsive: true,
+      maintainAspectRatio: true,
       plugins: {
-        legend: { position: 'bottom' },
+        legend: { display: false },
         tooltip: { callbacks: { label: function(ctx){
           var pct = gTot>0 ? Math.round(ctx.raw/gTot*100) : 0;
           return ctx.label+': '+ctx.raw+(ctx.raw===1?' giorno':' giorni')+' ('+pct+'%)';
@@ -2111,6 +2113,18 @@ function aggiornaGrafici() {
       }
     }
   });
+  // Badge colorati sotto la torta (sfondo colore, testo nero, giorni + %)
+  var badgeBox = document.getElementById('badgeGiorni');
+  if(badgeBox){
+    badgeBox.innerHTML = gLabelsF.map(function(lab,i){
+      var val = gValsF[i];
+      var pct = gTot>0 ? Math.round(val/gTot*100) : 0;
+      var gg  = val + (val===1?' gg':' gg');
+      return '<span style="background:'+gColorsF[i]+';color:#000;font-size:12px;font-weight:500;'+
+             'padding:6px 11px;border-radius:6px;white-space:nowrap;">'+
+             lab+' · '+gg+' ('+pct+'%)</span>';
+    }).join('');
+  }
 
   // ── Grafico KM ──
   var ctxKm = document.getElementById('chartKm').getContext('2d');
