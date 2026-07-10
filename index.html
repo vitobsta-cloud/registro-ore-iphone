@@ -2161,34 +2161,39 @@ function aggiornaGrafici() {
     if(!box) return;
     var ggLav = records.filter(function(r){ return (r.ore_tot||0)>0; }).length;
     var media = ggLav>0 ? Math.round(totKm/ggLav) : 0;
-    // scala lancetta: arrotonda per eccesso a multipli di 100, minimo 500
-    var scala = Math.max(500, Math.ceil((media*1.15)/100)*100);
-    var startA = 210, endA = -30;
+    var GIRO = 1000;                 // km per un giro completo del quadrante
+    var scala = GIRO;                // il quadrante mostra 0..1000
+    var resto = totKm % GIRO;        // dove si ferma l'ago
+    var giri  = Math.floor(totKm / GIRO); // giri interi da compiere
+    var startA = 210, endA = -30;    // 240° utili sul quadrante
+    var span = startA - endA;        // = 240
     var toXY = function(val, r){
-      var frac = Math.min(val/scala, 1);
-      var a = (startA - frac*(startA-endA)) * Math.PI/180;
+      var frac = (val % GIRO) / GIRO;
+      var a = (startA - frac*span) * Math.PI/180;
       return [110 + Math.cos(a)*r, 118 - Math.sin(a)*r];
     };
     var ticks='', nums='';
-    for(var v=0; v<=scala; v+=scala/5){
+    for(var v=0; v<scala; v+=scala/5){
       var o=toXY(v,88), i=toXY(v,72), n=toXY(v,58);
       ticks += '<line x1="'+o[0].toFixed(1)+'" y1="'+o[1].toFixed(1)+'" x2="'+i[0].toFixed(1)+'" y2="'+i[1].toFixed(1)+'" stroke="#961e1c" stroke-width="2.5"/>';
       nums  += '<text x="'+n[0].toFixed(1)+'" y="'+(n[1]+4).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="bold" fill="#961e1c">'+Math.round(v)+'</text>';
     }
-    for(var m=0;m<=scala;m+=scala/20){
+    for(var m=0;m<scala;m+=scala/20){
       if(m % (scala/5) === 0) continue;
       var o2=toXY(m,88), i2=toXY(m,80);
       ticks += '<line x1="'+o2[0].toFixed(1)+'" y1="'+o2[1].toFixed(1)+'" x2="'+i2[0].toFixed(1)+'" y2="'+i2[1].toFixed(1)+'" stroke="#961e1c" stroke-width="1"/>';
     }
-    // rulli del totale (6 cifre)
+    // rulli del totale (6 cifre) — mostrano sempre il totale esatto
     var roll = ('000000'+totKm).slice(-6);
     var rolls='';
     for(var k=0;k<roll.length;k++){
       rolls += '<rect x="'+(70+k*12)+'" y="34" width="11" height="16" rx="2" fill="#f5f2e1"/>'+
                '<text x="'+(75.5+k*12)+'" y="46" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a1a">'+roll[k]+'</text>';
     }
-    var ago = toXY(media, 62);
-    var coda = toXY(media, -22);
+    // Angolo finale dell'ago: 0 km = -120° (a sinistra), +120° a destra.
+    // Ogni giro aggiunge 360°. L'animazione parte da -120° (lo zero) e arriva qui.
+    var angZero  = -120;
+    var angFinal = angZero + (giri*360) + (resto/GIRO)*span;
     box.innerHTML =
       '<svg viewBox="0 0 220 210" width="240" style="max-width:100%">'+
         '<rect x="6" y="6" width="208" height="176" rx="34" fill="#cdd0d4"/>'+
@@ -2197,11 +2202,12 @@ function aggiornaGrafici() {
         '<text x="110" y="30" text-anchor="middle" font-size="13" font-weight="bold" fill="#961e1c" letter-spacing="1">Km Percorsi</text>'+
         '<rect x="66" y="32" width="'+(roll.length*12+4)+'" height="20" rx="3" fill="#191919"/>'+ rolls +
         ticks + nums +
-        '<line id="agoKm" x1="'+coda[0].toFixed(1)+'" y1="'+coda[1].toFixed(1)+'" x2="'+ago[0].toFixed(1)+'" y2="'+ago[1].toFixed(1)+'" stroke="#781614" stroke-width="4" stroke-linecap="round" style="transform-origin:110px 118px;transform:rotate(-120deg);animation:agoSpin .9s cubic-bezier(.34,1.3,.5,1) forwards"/>'+
+        // ago disegnato verticale verso l'alto; lo zero del quadrante è a -120°
+        '<line id="agoKm" x1="110" y1="140" x2="110" y2="56" stroke="#781614" stroke-width="4" stroke-linecap="round" style="transform-origin:110px 118px;--a:'+angFinal.toFixed(1)+'deg;transform:rotate('+angZero+'deg);animation:agoSpin 1.4s cubic-bezier(.33,1,.68,1) forwards"/>'+
         '<circle cx="110" cy="118" r="9" fill="#781614"/>'+
         '<circle cx="110" cy="118" r="3.5" fill="#ebe4c4"/>'+
         '<text x="110" y="150" text-anchor="middle" font-size="13" font-weight="bold" fill="#961e1c">Km</text>'+
-        '<style>@keyframes agoSpin{to{transform:rotate(0deg)}}@media (prefers-reduced-motion:reduce){#agoKm{animation:none}}</style>'+
+        '<style>@keyframes agoSpin{to{transform:rotate(var(--a))}}@media (prefers-reduced-motion:reduce){#agoKm{transform:rotate(var(--a))!important;animation:none}}</style>'+
       '</svg>'+
       '<div style="text-align:center;font-size:12px;color:#7a7c82;margin-top:6px">'+totKm+' km totali · media '+media+' km/giorno</div>';
   })();
