@@ -1455,7 +1455,7 @@ function calcolaBusta() {
   // Attivo a marzo(3), giugno(6), settembre(9), dicembre(12)
   var meseNum = parseInt(mp[1]);
   var annoNum = parseInt(mp[0]);
-  var premioProdOre = 0, premioProdImporto = 0, premioMesi = [];
+  var premioProdOre = 0, premioProdImporto = 0, premioProdNetto = 0, premioMesi = [];
   var mesiTrimestre = [];
   if(meseNum === 3)  mesiTrimestre = [annoNum+'-01', annoNum+'-02', annoNum+'-03'];
   if(meseNum === 6)  mesiTrimestre = [annoNum+'-04', annoNum+'-05', annoNum+'-06'];
@@ -1466,11 +1466,14 @@ function calcolaBusta() {
     var allRecords = db().filter(function(r){ return r.manuale && r.data; });
     mesiTrimestre.forEach(function(m){
       var recs = allRecords.filter(function(r){ return r.data.startsWith(m); });
-      var oreM = recs.reduce(function(s,r){ return s+(r.ore_ord||0)+(r.ore_stra||0); }, 0);
+      var oreM = recs.reduce(function(s,r){ return s+(r.ore_ord||0)+(r.ore_stra||0)+(r.ferie||0)+(r.permessi||0); }, 0);
       premioProdOre += oreM;
       premioMesi.push({ mese: mesiNomi[parseInt(m.split('-')[1])-1], ore: oreM });
     });
     premioProdImporto = premioProdOre * (cf.premio_produttivita||0);
+    // Il premio è parte del lordo tassabile in busta: va tassato con le stesse aliquote INPS+IRPEF
+    var premioDopoInps = premioProdImporto * (1 - ((cf.inps || 0) / 100));
+    premioProdNetto = premioDopoInps * (1 - ((cf.irpef || 0) / 100));
   }
 
   document.getElementById('bustaRisultato').innerHTML =
@@ -1525,10 +1528,13 @@ function calcolaBusta() {
           premioMesi.map(function(m){ return m.mese+': <b>'+m.ore.toFixed(1)+'h</b>'; }).join(' &nbsp;·&nbsp; ') +
         '</div>' +
         '<div class="res-row" style="border-color:#c5e1a5"><span>Ore totali trimestre</span><span><b>' + premioProdOre.toFixed(1) + 'h</b></span></div>' +
-        '<div class="res-row" style="border-color:#c5e1a5"><span>Premio ('+premioProdOre.toFixed(1)+'h × '+(cf.premio_produttivita||0).toFixed(2)+' €)</span><span><b style="color:#3b6d11">+ ' + premioProdImporto.toFixed(2) + ' €</b></span></div>' +
+        '<div class="res-row" style="border-color:#c5e1a5"><span>Premio lordo ('+premioProdOre.toFixed(1)+'h × '+(cf.premio_produttivita||0).toFixed(2)+' €)</span><span><b>' + premioProdImporto.toFixed(2) + ' €</b></span></div>' +
+        '<div class="res-row" style="border-color:#c5e1a5"><span>− INPS ('+(cf.inps||0).toFixed(2)+'%) e IRPEF ('+(cf.irpef||0).toFixed(2)+'%)</span><span style="color:#a32d2d">− ' + (premioProdImporto - premioProdNetto).toFixed(2) + ' €</span></div>' +
+        '<div class="res-row" style="border-color:#c5e1a5"><span>Premio netto</span><span><b style="color:#3b6d11">+ ' + premioProdNetto.toFixed(2) + ' €</b></span></div>' +
+        '<div style="font-size:10.5px;color:#7a7c82;margin-top:6px;line-height:1.4">Ore = ord. + straord. + ferie + permessi. Non include festività godute e ore viaggio (non tracciate in app) — la busta reale può essere leggermente più alta.</div>' +
         '<div style="border-top:1px solid #a5d6a7;margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">' +
           '<span style="font-weight:700;color:#1a1a18;font-size:14px">Netto + Premio</span>' +
-          '<span style="font-weight:700;color:#3b6d11;font-size:18px">' + (netto + premioProdImporto).toFixed(2) + ' €</span>' +
+          '<span style="font-weight:700;color:#3b6d11;font-size:18px">' + (netto + premioProdNetto).toFixed(2) + ' €</span>' +
         '</div>' +
       '</div>'
     : '') +
