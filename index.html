@@ -71,6 +71,9 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#eceff1;color:#1a1a1
 .trasf-row.attiva{border-color:#1a1a18;background:#1a1a18;}
 .trasf-row.attiva .lbl{color:#fff;}
 .trasf-row.attiva .chk{color:#fff;}
+.trasf-row-pern{border-width:1.5px;padding:13px 14px;}
+.trasf-row-pern .lbl{font-size:15px;font-weight:600;}
+.trasf-row-pern .chk{font-size:20px;}
 
 /* NOTE SPESA */
 .note-spesa-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
@@ -126,6 +129,7 @@ tr:hover td{background:#fafaf8;}
 .bdg-m{background:#fce4d6;color:#b5441c;}
 .bdg-f{background:#d4e6f1;color:#1a5d8f;}
 .bdg-p{background:#f0e6f5;color:#6a2d8f;}
+.bdg-s{background:#fdeaea;color:#a32d2d;}
 
 /* SETTINGS */
 .set-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid #f0efeb;gap:10px;}
@@ -184,7 +188,7 @@ tr:hover td{background:#fafaf8;}
 </head>
 <body>
 
-<div class="credits">TR/software</div>
+<div class="credits">TR/software <span id="creditsVersione" style="opacity:.6"></span></div>
 
 <div class="hdr">
   <button class="hdr-back" id="btnBack" onclick="goHome()">&#8592; Home</button>
@@ -284,6 +288,8 @@ tr:hover td{background:#fafaf8;}
           <div class="trasf-row" id="nostroCena"   onclick="toggleTrasf('nostroCena')"  ><span class="lbl">🌙 Cena</span><span class="chk">☐</span></div>
         </div>
       </div>
+      <div class="trasf-row trasf-row-pern" id="pernottamento" onclick="toggleTrasf('pernottamento')" style="margin-top:8px"><span class="lbl">🛏 Pernottamento</span><span class="chk">☐</span></div>
+      <div class="trasf-row" id="mezzaTrasf" onclick="toggleTrasf('mezzaTrasf')" style="margin-top:4px"><span class="lbl">🚗 Mezza trasferta (no pasto, oltre 4h)</span><span class="chk">☐</span></div>
 
       <div class="trasf-title">🌍 Trasferta Estero</div>
       <div class="trasf-grid">
@@ -308,6 +314,10 @@ tr:hover td{background:#fafaf8;}
         <div class="assenza-card">
           <div class="assenza-title">🌴 Ferie</div>
           <label><input type="checkbox" id="ferieCheck" onchange="onAssenzaChange('ferie')"> 8 ore</label>
+        </div>
+        <div class="assenza-card">
+          <div class="assenza-title">🎉 Festività</div>
+          <label><input type="checkbox" id="festivitaCheck" onchange="onAssenzaChange('festivita')"> 8 ore</label>
         </div>
       </div>
       <div class="permessi-row">
@@ -346,7 +356,7 @@ tr:hover td{background:#fafaf8;}
       <div class="twrap">
         <table>
           <thead>
-            <tr><th>Data</th><th>Cliente</th><th>Orari</th><th>Ore</th><th>Stra</th><th>KM</th><th>Trasf</th><th>Assenze</th><th></th></tr>
+            <tr><th>Data</th><th>Cliente</th><th>Orari</th><th>Ore</th><th>Stra</th><th>KM</th><th>Trasf</th><th>Spese</th><th>Assenze</th><th></th></tr>
           </thead>
           <tbody id="tbodyLista"></tbody>
         </table>
@@ -585,6 +595,8 @@ tr:hover td{background:#fafaf8;}
           <div class="trasf-row" id="m_nostroCena"   onclick="toggleTrasf('m_nostroCena')"  ><span class="lbl">🌙 Cena</span><span class="chk">☐</span></div>
         </div>
       </div>
+      <div class="trasf-row trasf-row-pern" id="m_pernottamento" onclick="toggleTrasf('m_pernottamento')" style="margin-top:8px"><span class="lbl">🛏 Pernottamento</span><span class="chk">☐</span></div>
+      <div class="trasf-row" id="m_mezzaTrasf" onclick="toggleTrasf('m_mezzaTrasf')" style="margin-top:4px"><span class="lbl">🚗 Mezza trasferta (no pasto, oltre 4h)</span><span class="chk">☐</span></div>
       <div class="trasf-title">🌍 Trasferta Estero</div>
       <div class="trasf-grid">
         <div class="trasf-row" id="m_esteroPranzo" onclick="toggleTrasf('m_esteroPranzo')"><span class="lbl">🍽 Pranzo</span><span class="chk">☐</span></div>
@@ -600,6 +612,7 @@ tr:hover td{background:#fafaf8;}
       <div class="assenze-grid">
         <div class="assenza-card"><div class="assenza-title">🏥 Malattia</div><label><input type="checkbox" id="mMalattia"> 8 ore</label></div>
         <div class="assenza-card"><div class="assenza-title">🌴 Ferie</div><label><input type="checkbox" id="mFerie"> 8 ore</label></div>
+        <div class="assenza-card"><div class="assenza-title">🎉 Festività</div><label><input type="checkbox" id="mFestivita"> 8 ore</label></div>
       </div>
       <div class="permessi-row">
         <span class="plbl">⏱️ Permessi</span>
@@ -655,6 +668,7 @@ tr:hover td{background:#fafaf8;}
     <div class="ph"><h2>Parametri di lavoro</h2></div>
     <div class="pb">
       <div class="set-row"><div class="set-info"><h3>Ore ordinarie/giorno</h3><p>Soglia per gli straordinari</p></div><input type="number" id="setOreStd" step="0.5" min="1" max="24"></div>
+      <div class="set-row"><div class="set-info"><h3>Ordinario fisso CCNL (ore/mese)</h3><p>Voce 8001 in busta — fisso, non dipende dalle ore registrate</p></div><input type="number" id="setOreFisso" step="1" min="0" max="300"></div>
       <div class="set-row"><div class="set-info"><h3>Paga €/ora ordinaria</h3><p>Tariffa oraria base</p></div><input type="number" id="setPaga" step="0.01" min="0"></div>
       <div class="set-row"><div class="set-info"><h3>Paga €/ora straordinaria</h3><p>Maggiore della paga base</p></div><input type="number" id="setPagaStra" step="0.01" min="0"></div>
       <div class="set-row"><div class="set-info"><h3>Trattenuta INPS %</h3><p>Percentuale contributi</p></div><input type="number" id="setInps" step="0.01" min="0" max="100"></div>
@@ -669,15 +683,21 @@ tr:hover td{background:#fafaf8;}
   <div class="panel">
     <div class="ph"><h2>🇮🇹 Trasferta Italia — Carico Cliente</h2></div>
     <div class="pb">
-      <div class="set-row"><div class="set-info"><h3>Rimborso Pranzo (€)</h3></div><input type="number" id="setRimborsoClientePranzo" step="0.01" min="0"></div>
-      <div class="set-row"><div class="set-info"><h3>Rimborso Cena (€)</h3></div><input type="number" id="setRimborsoClienteCena" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Un pasto (€)</h3></div><input type="number" id="setCliente1P" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Due pasti (€)</h3></div><input type="number" id="setCliente2P" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Un pasto + pernott. (€)</h3></div><input type="number" id="setCliente1PPern" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Due pasti + pernott. (€)</h3></div><input type="number" id="setCliente2PPern" step="0.01" min="0"></div>
     </div>
   </div>
   <div class="panel">
     <div class="ph"><h2>🇮🇹 Trasferta Italia — Carico Nostro</h2></div>
     <div class="pb">
-      <div class="set-row"><div class="set-info"><h3>Rimborso Pranzo (€)</h3></div><input type="number" id="setRimborsoNostroPranzo" step="0.01" min="0"></div>
-      <div class="set-row"><div class="set-info"><h3>Rimborso Cena (€)</h3></div><input type="number" id="setRimborsoNostroCena" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>No pasto (€)</h3></div><input type="number" id="setNostro0P" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Un pasto (€)</h3></div><input type="number" id="setNostro1P" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Due pasti (€)</h3></div><input type="number" id="setNostro2P" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>No pasto + pernott. (€)</h3></div><input type="number" id="setNostro0PPern" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Un pasto + pernott. (€)</h3></div><input type="number" id="setNostro1PPern" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Due pasti + pernott. (€)</h3></div><input type="number" id="setNostro2PPern" step="0.01" min="0"></div>
     </div>
   </div>
   <div class="panel">
@@ -746,6 +766,7 @@ tr:hover td{background:#fafaf8;}
     <div class="ph"><h2>Info</h2></div>
     <div class="pb" style="font-size:13px;color:#888;line-height:1.9;">
       <p id="infoCount" style="font-weight:600;color:#1a1a18;margin-bottom:4px;"></p>
+      <p id="infoVersione" style="color:#888;"></p>
       <p>I dati sono salvati nel browser (localStorage).</p>
       <p>Esporta regolarmente il JSON come backup.</p>
     </div>
@@ -755,6 +776,7 @@ tr:hover td{background:#fafaf8;}
 <div id="toast"></div>
 
 <script>
+var APP_VERSION = 'v21';
 var DB_KEY  = 'rl_db_v3';
 var CFG_KEY = 'rl_cfg_v3';
 var MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
@@ -774,9 +796,12 @@ function db() { try { var d = localStorage.getItem(DB_KEY); return d ? JSON.pars
 function saveDb(d) { localStorage.setItem(DB_KEY, JSON.stringify(d)); }
 function cfg() {
   var def = { ore_std:8, paga:10, paga_stra:12, inps:9.19, irpef:23,
+    ordinario_fisso_ore:173,
     rimborso_cliente_pranzo:25, rimborso_cliente_cena:30,
     rimborso_nostro_pranzo:25, rimborso_nostro_cena:30,
     rimborso_estero_pranzo:40, rimborso_estero_cena:50,
+    cliente_1p:14, cliente_2p:28, cliente_1p_pern:22.5, cliente_2p_pern:36.5,
+    nostro_0p:11, nostro_1p:30, nostro_2p:70, nostro_0p_pern:19.5, nostro_1p_pern:45, nostro_2p_pern:80,
     tetto_trasferte:40, premio_produttivita:0,
     addiz_regionale:0, addiz_comunale:0 };
   try { var s = localStorage.getItem(CFG_KEY); return s ? Object.assign(def, JSON.parse(s)) : def; }
@@ -827,8 +852,38 @@ function aggiornaHome() {
 function toggleTrasf(id) {
   var el = document.getElementById(id);
   var chk = el.querySelector('.chk');
-  if(el.classList.contains('attiva')){ el.classList.remove('attiva'); chk.textContent='☐'; }
-  else { el.classList.add('attiva'); chk.textContent='☒'; }
+  var attivando = !el.classList.contains('attiva');
+  if(attivando){ el.classList.add('attiva'); chk.textContent='☒'; }
+  else { el.classList.remove('attiva'); chk.textContent='☐'; }
+
+  // Mezza trasferta (no pasto, no pernottamento) è incompatibile con qualsiasi pasto
+  // Italia (Cliente o Nostro) E con il Pernottamento: pacchetti a sé, mutuamente esclusivi.
+  var prefix = id.indexOf('m_') === 0 ? 'm_' : '';
+  var pastiIds = [prefix+'clientePranzo', prefix+'clienteCena', prefix+'nostroPranzo', prefix+'nostroCena'];
+  var mezzaId = prefix+'mezzaTrasf';
+  var pernId  = prefix+'pernottamento';
+
+  function disattiva(elId) {
+    var e = document.getElementById(elId);
+    if(e && e.classList.contains('attiva')) {
+      e.classList.remove('attiva');
+      e.querySelector('.chk').textContent = '☐';
+    }
+  }
+
+  if(attivando && pastiIds.indexOf(id) !== -1) {
+    // Ho appena spuntato un pasto → disattivo mezza trasferta se attiva
+    disattiva(mezzaId);
+  }
+  if(attivando && id === pernId) {
+    // Ho appena spuntato pernottamento → disattivo mezza trasferta se attiva
+    disattiva(mezzaId);
+  }
+  if(attivando && id === mezzaId) {
+    // Ho appena spuntato mezza trasferta → disattivo tutti i pasti e il pernottamento se attivi
+    pastiIds.forEach(disattiva);
+    disattiva(pernId);
+  }
 }
 function getTrasfData() {
   return {
@@ -837,12 +892,14 @@ function getTrasfData() {
     nostroPranzo:        document.getElementById('nostroPranzo').classList.contains('attiva'),
     nostroCena:          document.getElementById('nostroCena').classList.contains('attiva'),
     esteroPranzo: document.getElementById('esteroPranzo').classList.contains('attiva'),
-    esteroCena:   document.getElementById('esteroCena').classList.contains('attiva')
+    esteroCena:   document.getElementById('esteroCena').classList.contains('attiva'),
+    pernottamento: document.getElementById('pernottamento') ? document.getElementById('pernottamento').classList.contains('attiva') : false,
+    mezzaTrasf: document.getElementById('mezzaTrasf') ? document.getElementById('mezzaTrasf').classList.contains('attiva') : false
   };
 }
 function resetTrasf() {
   ['clientePranzo','clienteCena','nostroPranzo','nostroCena',
-   'esteroPranzo','esteroCena'].forEach(function(id){
+   'esteroPranzo','esteroCena','pernottamento','mezzaTrasf'].forEach(function(id){
     var el = document.getElementById(id);
     if(el){ el.classList.remove('attiva'); el.querySelector('.chk').textContent='☐'; }
   });
@@ -856,7 +913,7 @@ function contaTrasf(t) {
 function labelTrasf(t) {
   if(!t) return '—';
   if(typeof t === 'number') return t > 0 ? t+' trasf.' : '—';
-  if(contaTrasf(t)===0) return '—';
+  if(contaTrasf(t)===0 && !t.pernottamento && !t.mezzaTrasf) return '—';
   var p=[];
   if(t.clientePranzo) p.push('[I]CP');
   if(t.clienteCena)   p.push('[I]CC');
@@ -864,7 +921,55 @@ function labelTrasf(t) {
   if(t.nostroCena)    p.push('[I]NC');
   if(t.esteroPranzo)  p.push('[E]P');
   if(t.esteroCena)    p.push('[E]C');
+  if(t.pernottamento) p.push('<span style="font-size:16px">🛏</span>');
+  if(t.mezzaTrasf)    p.push('<span style="font-size:16px">🚗½</span>');
   return p.join(' ');
+}
+// Calcola il rimborso lordo di UNA giornata di trasferta Italia, secondo il sistema a pacchetto
+// (chi paga il vitto x quanti pasti x pernottamento) invece della somma lineare pranzo+cena.
+function calcolaRimborsoGiornoItalia(t, cf) {
+  if(!t || typeof t !== 'object') return 0;
+  var pern = !!t.pernottamento;
+  var nPastiCliente = (t.clientePranzo?1:0) + (t.clienteCena?1:0);
+  var nPastiNostro   = (t.nostroPranzo?1:0)  + (t.nostroCena?1:0);
+  var tot = 0;
+  if(nPastiCliente === 1)      tot += pern ? (cf.cliente_1p_pern||0) : (cf.cliente_1p||0);
+  else if(nPastiCliente === 2) tot += pern ? (cf.cliente_2p_pern||0) : (cf.cliente_2p||0);
+  if(nPastiNostro === 1)       tot += pern ? (cf.nostro_1p_pern||0) : (cf.nostro_1p||0);
+  else if(nPastiNostro === 2)  tot += pern ? (cf.nostro_2p_pern||0) : (cf.nostro_2p||0);
+  else if(nPastiNostro === 0 && nPastiCliente === 0 && pern) tot += (cf.nostro_0p_pern||0);
+  // Mezza trasferta: no pasti, no pernottamento, ma trasferta oltre le 4h — spunta manuale
+  // (la soglia ore va verificata dall'utente prima di spuntare, non è dedotta dal registro).
+  else if(nPastiNostro === 0 && nPastiCliente === 0 && !pern && t.mezzaTrasf) tot += (cf.nostro_0p||0);
+  return tot;
+}
+// Soglie di esenzione fiscale CCNL Metalmeccanica (fisse, non configurabili): 15,49€ e 44,97€.
+// Ogni pacchetto ha una soglia nota; alcuni sono interamente esenti (senza soglia).
+var SOGLIA_BASSA = 15.49, SOGLIA_ALTA = 44.97;
+function sogliaEsenzioneGiornoItalia(t) {
+  if(!t || typeof t !== 'object') return { esente: 0, soglia: null };
+  var pern = !!t.pernottamento;
+  var nPastiCliente = (t.clientePranzo?1:0) + (t.clienteCena?1:0);
+  var nPastiNostro   = (t.nostroPranzo?1:0)  + (t.nostroCena?1:0);
+  var soglia = 0; // 0 = interamente esente, nessun limite
+  if(nPastiCliente === 2) soglia = SOGLIA_BASSA;
+  if(nPastiCliente === 1 && pern) soglia = SOGLIA_BASSA;
+  if(nPastiCliente === 2 && pern) soglia = SOGLIA_BASSA;
+  if(nPastiNostro === 1 && pern) soglia = SOGLIA_BASSA;
+  if(nPastiNostro === 0 && pern && nPastiCliente === 0) soglia = SOGLIA_BASSA;
+  if(nPastiNostro === 2) soglia = SOGLIA_ALTA;
+  if(nPastiNostro === 2 && pern) soglia = SOGLIA_ALTA;
+  // Mezza trasferta (11€, no pasto no pernott.): interamente esente, come "no pasto" da tabella
+  return soglia;
+}
+// Calcola esente/tassabile di UNA giornata: se il pacchetto non ha soglia, tutto esente.
+// Se ha soglia, esente = min(lordo, soglia), tassabile = eccedenza.
+function calcolaFiscoGiornoItalia(t, cf) {
+  var lordo = calcolaRimborsoGiornoItalia(t, cf);
+  var soglia = sogliaEsenzioneGiornoItalia(t);
+  if(soglia === 0) return { esente: lordo, tassabile: 0 };
+  var esente = Math.min(lordo, soglia);
+  return { esente: esente, tassabile: Math.max(0, lordo - esente) };
 }
 
 // ── AUTOCALC ──
@@ -899,15 +1004,18 @@ function aggiornaStatoAssenze() {
   var fOrdEl = document.getElementById('fOrd');
   var malEl = document.getElementById('malattiaCheck');
   var ferEl = document.getElementById('ferieCheck');
+  var festEl = document.getElementById('festivitaCheck');
   if(!fClEl || !fOrdEl || !malEl || !ferEl) return;
   var cl = fClEl.value.trim();
   var haOre = parseFloat(fOrdEl.value) > 0;
-  var haCliente = cl && cl !== 'Malattia' && cl !== 'Ferie';
+  var haCliente = cl && cl !== 'Malattia' && cl !== 'Ferie' && cl !== 'Festività';
   var blocca = haCliente && haOre;
   var malCard = malEl.closest('.assenza-card');
   var ferCard = ferEl.closest('.assenza-card');
+  var festCard = festEl ? festEl.closest('.assenza-card') : null;
   if(malCard) { malCard.style.opacity = blocca ? '0.4' : '1'; malCard.title = blocca ? 'Non disponibile con cliente e ore' : ''; }
   if(ferCard) { ferCard.style.opacity = blocca ? '0.4' : '1'; ferCard.title = blocca ? 'Non disponibile con cliente e ore' : ''; }
+  if(festCard) { festCard.style.opacity = blocca ? '0.4' : '1'; festCard.title = blocca ? 'Non disponibile con cliente e ore' : ''; }
 }
 
 // Quando si clicca Malattia o Ferie
@@ -915,13 +1023,14 @@ function aggiornaStatoAssenze() {
 function onAssenzaChange(tipo) {
   var malCheck   = document.getElementById('malattiaCheck');
   var ferCheck   = document.getElementById('ferieCheck');
+  var festCheck  = document.getElementById('festivitaCheck');
   var clienteEl  = document.getElementById('fCliente');
   var prevEl     = document.getElementById('prevCalc');
   var permEl     = document.getElementById('permessi');
   var permRow    = permEl.closest('.permessi-row');
 
-  // se c'è già un cliente con ore → ferie/malattia non consentite
-  var haCliente = clienteEl.value.trim() && clienteEl.value !== 'Malattia' && clienteEl.value !== 'Ferie';
+  // se c'è già un cliente con ore → ferie/malattia/festività non consentite
+  var haCliente = clienteEl.value.trim() && clienteEl.value !== 'Malattia' && clienteEl.value !== 'Ferie' && clienteEl.value !== 'Festività';
   var haOre     = parseFloat(document.getElementById('fOrd').value) > 0;
   if(haCliente && haOre) {
     if(tipo === 'malattia' && malCheck.checked) {
@@ -932,12 +1041,17 @@ function onAssenzaChange(tipo) {
       ferCheck.checked = false;
       alert('⚠ Non puoi segnare Ferie se hai già inserito un cliente con ore lavorate.\nSe vuoi aggiungere dei permessi usa il campo Permessi.');
     }
+    if(tipo === 'festivita' && festCheck.checked) {
+      festCheck.checked = false;
+      alert('⚠ Non puoi segnare Festività se hai già inserito un cliente con ore lavorate.\nSe vuoi aggiungere dei permessi usa il campo Permessi.');
+    }
     return;
   }
 
   if(tipo === 'malattia') {
     if(malCheck.checked) {
       ferCheck.checked       = false;
+      festCheck.checked      = false;
       clienteEl.value        = 'Malattia';
       clienteEl.disabled     = true;
       permEl.value           = '';
@@ -957,6 +1071,7 @@ function onAssenzaChange(tipo) {
   if(tipo === 'ferie') {
     if(ferCheck.checked) {
       malCheck.checked       = false;
+      festCheck.checked      = false;
       clienteEl.value        = 'Ferie';
       clienteEl.disabled     = true;
       permEl.value           = '';
@@ -967,6 +1082,26 @@ function onAssenzaChange(tipo) {
     } else {
       clienteEl.disabled     = false;
       if(clienteEl.value === 'Ferie') clienteEl.value = '';
+      permEl.disabled        = false;
+      permRow.style.opacity  = '1';
+      prevEl.style.display   = 'none';
+    }
+  }
+
+  if(tipo === 'festivita') {
+    if(festCheck.checked) {
+      malCheck.checked       = false;
+      ferCheck.checked       = false;
+      clienteEl.value        = 'Festività';
+      clienteEl.disabled     = true;
+      permEl.value           = '';
+      permEl.disabled        = true;
+      permRow.style.opacity  = '0.4';
+      prevEl.style.display   = 'block';
+      prevEl.textContent     = 'Festività selezionata — i permessi non sono disponibili';
+    } else {
+      clienteEl.disabled     = false;
+      if(clienteEl.value === 'Festività') clienteEl.value = '';
       permEl.disabled        = false;
       permRow.style.opacity  = '1';
       prevEl.style.display   = 'none';
@@ -1029,6 +1164,7 @@ function salva() {
     km:      parseInt(document.getElementById('fKm').value)||0,
     malattia: document.getElementById('malattiaCheck').checked ? 8 : 0,
     ferie:    document.getElementById('ferieCheck').checked ? 8 : 0,
+    festivita: document.getElementById('festivitaCheck').checked ? 8 : 0,
     permessi: parseFloat(document.getElementById('permessi').value)||0,
     codici:   document.getElementById('fCodici').value.trim().toUpperCase(),
     note:     document.getElementById('fNote').value.trim()
@@ -1045,6 +1181,7 @@ function resetForm() {
   document.getElementById('permessi').closest('.permessi-row').style.opacity = '1';
   document.getElementById('malattiaCheck').checked=false;
   document.getElementById('ferieCheck').checked=false;
+  document.getElementById('festivitaCheck').checked=false;
   document.getElementById('prevCalc').style.display='none';
   resetTrasf();
 }
@@ -1204,6 +1341,7 @@ function renderLista() {
       '<td>'+((r.ore_stra||0)>0?'<span class="bdg bdg-a">+'+r.ore_stra.toFixed(1)+'h</span>':'&#8212;')+'</td>'+
       '<td>'+(r.km?r.km+' km':'&#8212;')+'</td>'+
       '<td style="font-size:12px">'+labelTrasf(r.trasferte)+'</td>'+
+      '<td>'+(((r.spesa_pranzo||0)+(r.spesa_cena||0))>0?'<span class="bdg bdg-s">'+((r.spesa_pranzo||0)+(r.spesa_cena||0)).toFixed(2)+' €</span>':'&#8212;')+'</td>'+
       '<td>'+assenze+'</td>'+
       '<td onclick="event.stopPropagation()"><button class="btn btn-s btn-d" onclick="elimina('+idx+')">&#10005;</button></td>'+
     '</tr>';
@@ -1366,7 +1504,7 @@ function calcolaBusta() {
   var records = db().filter(function(r){ return r.manuale && r.data && r.data.startsWith(mese); });
   var cf = cfg();
 
-  var totOrd=0, totStra=0, totAssenze=0, totPermessi=0, spP=0, spC=0;
+  var totOrd=0, totStra=0, totAssenze=0, totPermessi=0, totFestivita=0, spP=0, spC=0;
   var cP=0, cC=0, nP=0, nC=0, eP=0, eC=0;
   var giorniLav=0;
 
@@ -1378,6 +1516,7 @@ function calcolaBusta() {
     totStra += r.ore_stra || 0;
     totAssenze += (r.malattia||0) + (r.ferie||0);
     totPermessi+= r.permessi || 0;
+    totFestivita+= r.festivita || 0;
     spP        += r.spesa_pranzo || 0;
     spC        += r.spesa_cena   || 0;
     var t = r.trasferte;
@@ -1390,54 +1529,61 @@ function calcolaBusta() {
     }
   });
 
-  // ── Calcolo rimborsi trasferte con tetto fiscale ──
-  var tetto = cf.tetto_trasferte || 40; // € esenti per giorno di trasferta
-
-  // Calcola importo e tassazione per ogni giorno di trasferta
-  // Per ogni giorno con trasferta: min(importo, tetto) = esente; max(0, importo-tetto) = tassabile
-  var rimTotEsente = 0, rimTotTassabile = 0;
-
-  function calcolaFisco(n, tariffa) {
-    // n = numero di pasti, tariffa = € a pasto
-    // ogni pasto in un giorno conta separatamente? No: si calcola per giornata
-    // Qui sommiamo i rimborsi e poi applichiamo il tetto per giornata
-    return n * tariffa;
-  }
-
-  // Rimborso lordo per categoria
-  var rimCliP = cP * (cf.rimborso_cliente_pranzo||0);
-  var rimCliC = cC * (cf.rimborso_cliente_cena||0);
-  var rimNosP = nP * (cf.rimborso_nostro_pranzo||0);
-  var rimNosC = nC * (cf.rimborso_nostro_cena||0);
+  // ── Calcolo rimborsi trasferte con soglie fiscali reali (CCNL) per singola giornata ──
+  // Rimborso lordo ITALIA: calcolato per giornata con il sistema a pacchetto (pasti + pernottamento)
+  var rimItalia = 0;
+  var esenteItalia = 0, tassabileItalia = 0;
+  var giorniConTrasfItalia = 0;
+  records.forEach(function(r){
+    var t = r.trasferte;
+    if(t && typeof t === 'object') {
+      var giornoHaItalia = t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.pernottamento||t.mezzaTrasf;
+      if(giornoHaItalia) {
+        var fisco = calcolaFiscoGiornoItalia(t, cf);
+        rimItalia += fisco.esente + fisco.tassabile;
+        esenteItalia += fisco.esente;
+        tassabileItalia += fisco.tassabile;
+        giorniConTrasfItalia++;
+      }
+    }
+  });
   var rimEstP = eP * (cf.rimborso_estero_pranzo||0);
   var rimEstC = eC * (cf.rimborso_estero_cena||0);
 
-  var rimCli = rimCliP + rimCliC;
-  var rimNos = rimNosP + rimNosC;
   var rimEst = rimEstP + rimEstC;
-  var totTrasf = rimCli + rimNos + rimEst;
+  var totTrasf = rimItalia + rimEst;
   var nTrasf = cP + cC + nP + nC + eP + eC;
 
-  // Numero giorni con almeno una trasferta
-  var giorniConTrasf = records.filter(function(r){
+  // Numero giorni con almeno una trasferta (Italia o estero)
+  var tetto = cf.tetto_trasferte || 40; // usato solo per la quota estero (non ancora migrata alle soglie CCNL)
+  var giorniConTrasf = giorniConTrasfItalia + records.filter(function(r){
     var t = r.trasferte;
-    if(!t) return false;
-    if(typeof t === 'number') return t > 0;
-    return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena;
+    if(!t || typeof t !== 'object') return false;
+    return t.esteroPranzo||t.esteroCena;
   }).length;
+  var giorniEstero = giorniConTrasf - giorniConTrasfItalia;
 
-  // Per ogni giorno con trasferta: esente fino a tetto, tassabile l'eccedenza
-  var esentePerGiorno = giorniConTrasf > 0 ? Math.min(totTrasf / giorniConTrasf, tetto) : 0;
-  var totEsente     = esentePerGiorno * giorniConTrasf;
-  var totTassabile  = Math.max(0, totTrasf - totEsente);
+  // Estero: resta sul vecchio tetto piatto finché non si mappano le soglie estero specifiche
+  var esenteEstero = giorniEstero > 0 ? Math.min(rimEst / giorniEstero, tetto) * giorniEstero : 0;
+  var tassabileEstero = Math.max(0, rimEst - esenteEstero);
+
+  var totEsente     = esenteItalia + esenteEstero;
+  var totTassabile  = tassabileItalia + tassabileEstero;
 
   // importi
-  var impOrd  = totOrd      * (cf.paga      || 0);
+  // ── Ordinario fisso CCNL ──
+  // Verificato su 4 cedolini reali (gen/apr/mag/lug): la voce "8001 LAVORO ORDINARIO ORE"
+  // è SEMPRE pari a cf.ordinario_fisso_ore (173h di default), indipendentemente dalle ore
+  // realmente lavorate nel mese. Le ore di malattia/ferie/permessi/festività godute NON
+  // vanno sottratte né riaggiunte separatamente: sono già ricomprese nel fisso mensile
+  // (in busta: Assenze(8724) = Festività+Ferie+Permessi godute, si autocompensano sempre).
+  // Il registro giornaliero (totOrd, totAssenze, totPermessi, totFestivita) resta
+  // invariato e continua a essere usato per il Premio Produttività e le altre pagine.
+  var oreFisso = cf.ordinario_fisso_ore || 173;
+  var impOrd  = oreFisso    * (cf.paga      || 0);
   var impStra = totStra     * (cf.paga_stra || 0);
-  var impAss  = totAssenze  * (cf.paga      || 0);
-  var impPerm = totPermessi * (cf.paga      || 0);
   // Il lordo include le trasferte tassabili (le esenti non concorrono al reddito)
-  var lordo   = impOrd + impStra + impAss + impPerm + totTassabile;
+  var lordo   = impOrd + impStra + totTassabile;
   var inps    = lordo * ((cf.inps  || 0) / 100);
   var irpef   = (lordo - inps) * ((cf.irpef || 0) / 100);
   var addizReg = cf.addiz_regionale || 0;
@@ -1466,7 +1612,7 @@ function calcolaBusta() {
     var allRecords = db().filter(function(r){ return r.manuale && r.data; });
     mesiTrimestre.forEach(function(m){
       var recs = allRecords.filter(function(r){ return r.data.startsWith(m); });
-      var oreM = recs.reduce(function(s,r){ return s+(r.ore_ord||0)+(r.ore_stra||0)+(r.ferie||0)+(r.permessi||0); }, 0);
+      var oreM = recs.reduce(function(s,r){ return s+(r.ore_ord||0)+(r.ore_stra||0)+(r.ferie||0)+(r.permessi||0)+(r.festivita||0); }, 0);
       premioProdOre += oreM;
       premioMesi.push({ mese: mesiNomi[parseInt(m.split('-')[1])-1], ore: oreM });
     });
@@ -1479,29 +1625,30 @@ function calcolaBusta() {
   document.getElementById('bustaRisultato').innerHTML =
     '<div style="font-size:13px;color:#888780;margin-bottom:14px;font-weight:500">Riepilogo ' + meseLbl + ' — ' + giorniLav + ' giorni lavorati</div>' +
 
-    '<div class="sec-lbl">Dettaglio ore</div>' +
-    '<div class="stats" style="margin-bottom:14px">' +
-      '<div class="stat"><div class="stat-l">Ore ord.</div><div class="stat-v">' + totOrd.toFixed(1) + 'h</div><div class="stat-s">' + impOrd.toFixed(2) + ' €</div></div>' +
+    '<div class="sec-lbl">Dettaglio ore registrate</div>' +
+    '<div class="stats" style="margin-bottom:8px">' +
+      '<div class="stat"><div class="stat-l">Ore ord.</div><div class="stat-v">' + totOrd.toFixed(1) + 'h</div></div>' +
       '<div class="stat"><div class="stat-l">Straord.</div><div class="stat-v">' + totStra.toFixed(1) + 'h</div><div class="stat-s">' + impStra.toFixed(2) + ' €</div></div>' +
-      (totAssenze > 0 ? '<div class="stat"><div class="stat-l">Assenze</div><div class="stat-v">' + totAssenze.toFixed(0) + 'h</div><div class="stat-s">' + impAss.toFixed(2) + ' €</div></div>' : '') +
-      (totPermessi > 0 ? '<div class="stat"><div class="stat-l">Permessi</div><div class="stat-v">' + totPermessi.toFixed(1) + 'h</div><div class="stat-s">' + impPerm.toFixed(2) + ' €</div></div>' : '') +
+      (totAssenze > 0 ? '<div class="stat"><div class="stat-l">Malattia+Ferie</div><div class="stat-v">' + totAssenze.toFixed(0) + 'h</div></div>' : '') +
+      (totFestivita > 0 ? '<div class="stat"><div class="stat-l">Festività</div><div class="stat-v">' + totFestivita.toFixed(1) + 'h</div></div>' : '') +
+      (totPermessi > 0 ? '<div class="stat"><div class="stat-l">Permessi</div><div class="stat-v">' + totPermessi.toFixed(1) + 'h</div></div>' : '') +
     '</div>' +
+    '<div style="font-size:10.5px;color:#7a7c82;margin-bottom:14px;line-height:1.4">L\'ordinario in busta è un fisso CCNL di ' + oreFisso.toFixed(0) + 'h/mese (vedi sotto), non la somma delle ore registrate qui.</div>' +
 
     (nTrasf > 0 ?
       '<div class="sec-lbl">Trasferte</div>' +
       '<div class="stats" style="margin-bottom:8px">' +
-        (cP||cC ? '<div class="stat"><div class="stat-l">Italia Cliente</div><div class="stat-v">' + (cP+cC) + '</div><div class="stat-s">' + rimCli.toFixed(2) + ' €</div></div>' : '') +
-        (nP||nC ? '<div class="stat"><div class="stat-l">Italia Nostro</div><div class="stat-v">' + (nP+nC) + '</div><div class="stat-s">' + rimNos.toFixed(2) + ' €</div></div>' : '') +
+        (giorniConTrasfItalia ? '<div class="stat"><div class="stat-l">Italia</div><div class="stat-v">' + giorniConTrasfItalia + ' gg</div><div class="stat-s">' + rimItalia.toFixed(2) + ' €</div></div>' : '') +
         (eP||eC ? '<div class="stat"><div class="stat-l">Estero</div><div class="stat-v">' + (eP+eC) + '</div><div class="stat-s">' + rimEst.toFixed(2) + ' €</div></div>' : '') +
       '</div>' +
       '<div class="res-row"><span>Totale rimborsi trasferte</span><span><b>' + totTrasf.toFixed(2) + ' €</b></span></div>' +
       '<div style="background:#eaf3de;border-radius:8px;padding:10px 14px;margin:6px 0;display:flex;justify-content:space-between;align-items:center">' +
-        '<span style="font-size:13px;color:#3b6d11"><b>Tax 0%</b> &nbsp;Quota esente (max ' + tetto.toFixed(0) + '€/gg)</span>' +
+        '<span style="font-size:13px;color:#3b6d11"><b>Tax 0%</b> &nbsp;Quota esente (soglie CCNL)</span>' +
         '<span style="font-size:14px;font-weight:700;color:#3b6d11">' + totEsente.toFixed(2) + ' €</span>' +
       '</div>' +
       (totTassabile > 0 ?
         '<div style="background:#faeeda;border-radius:8px;padding:10px 14px;margin:6px 0;display:flex;justify-content:space-between;align-items:center">' +
-          '<span style="font-size:13px;color:#854f0b"><b>Tassata</b> &nbsp;Eccedenza tetto (' + tetto.toFixed(0) + '€/gg)</span>' +
+          '<span style="font-size:13px;color:#854f0b"><b>Tassata</b> &nbsp;Eccedenza soglia CCNL</span>' +
           '<span style="font-size:14px;font-weight:700;color:#854f0b">' + totTassabile.toFixed(2) + ' €</span>' +
         '</div>'
       : '') +
@@ -1509,10 +1656,8 @@ function calcolaBusta() {
     : '') +
 
     '<div class="sec-lbl">Calcolo stipendio</div>' +
-    '<div class="res-row"><span>Ore ordinarie (' + totOrd.toFixed(1) + 'h × ' + (cf.paga||0).toFixed(2) + ' €)</span><span>' + impOrd.toFixed(2) + ' €</span></div>' +
+    '<div class="res-row"><span>Ordinario fisso CCNL (' + oreFisso.toFixed(0) + 'h × ' + (cf.paga||0).toFixed(2) + ' €)</span><span>' + impOrd.toFixed(2) + ' €</span></div>' +
     (totStra > 0 ? '<div class="res-row"><span>Straordinari (' + totStra.toFixed(1) + 'h × ' + (cf.paga_stra||0).toFixed(2) + ' €)</span><span>' + impStra.toFixed(2) + ' €</span></div>' : '') +
-    (totAssenze > 0 ? '<div class="res-row"><span>Assenze (' + totAssenze.toFixed(0) + 'h)</span><span>' + impAss.toFixed(2) + ' €</span></div>' : '') +
-    (totPermessi > 0 ? '<div class="res-row"><span>Permessi (' + totPermessi.toFixed(1) + 'h)</span><span>' + impPerm.toFixed(2) + ' €</span></div>' : '') +
     (nTrasf > 0 ? '<div class="res-row"><span>Rimborsi trasferte</span><span>' + totTrasf.toFixed(2) + ' €</span></div>' : '') +
     '<div class="res-row" style="border-top:1.5px solid #e0e0e0;margin-top:6px;padding-top:10px"><span><b>Totale Lordo</b></span><span><b>' + lordo.toFixed(2) + ' €</b></span></div>' +
     '<div class="res-row"><span>INPS (' + (cf.inps||0) + '%)</span><span style="color:#a32d2d">− ' + inps.toFixed(2) + ' €</span></div>' +
@@ -1531,7 +1676,7 @@ function calcolaBusta() {
         '<div class="res-row" style="border-color:#c5e1a5"><span>Premio lordo ('+premioProdOre.toFixed(1)+'h × '+(cf.premio_produttivita||0).toFixed(2)+' €)</span><span><b>' + premioProdImporto.toFixed(2) + ' €</b></span></div>' +
         '<div class="res-row" style="border-color:#c5e1a5"><span>− INPS ('+(cf.inps||0).toFixed(2)+'%) e IRPEF ('+(cf.irpef||0).toFixed(2)+'%)</span><span style="color:#a32d2d">− ' + (premioProdImporto - premioProdNetto).toFixed(2) + ' €</span></div>' +
         '<div class="res-row" style="border-color:#c5e1a5"><span>Premio netto</span><span><b style="color:#3b6d11">+ ' + premioProdNetto.toFixed(2) + ' €</b></span></div>' +
-        '<div style="font-size:10.5px;color:#7a7c82;margin-top:6px;line-height:1.4">Ore = ord. + straord. + ferie + permessi. Non include festività godute e ore viaggio (non tracciate in app) — la busta reale può essere leggermente più alta.</div>' +
+        '<div style="font-size:10.5px;color:#7a7c82;margin-top:6px;line-height:1.4">Ore = ord. + straord. + ferie + permessi + festività. Non include ore viaggio 30% (non tracciate in app) — la busta reale può differire leggermente su quella voce.</div>' +
         '<div style="border-top:1px solid #a5d6a7;margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">' +
           '<span style="font-weight:700;color:#1a1a18;font-size:14px">Netto + Premio</span>' +
           '<span style="font-weight:700;color:#3b6d11;font-size:18px">' + (netto + premioProdNetto).toFixed(2) + ' €</span>' +
@@ -1638,13 +1783,15 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
       return;
     }
     // Giorni mancanti: calcola stima
-    var oreStdMancanti = giorniRimanenti * (cf.ore_std || 8);
-    var impOrdMancanti = oreStdMancanti * (cf.paga || 0);
+    // NOTA: l'ordinario è un fisso CCNL (oreFisso × paga), non dipende da quante ore
+    // sono state inserite né da quante ne mancano — quindi qui NON si stima un
+    // "impOrdMancanti" separato: il fisso mensile è già completo di suo.
+    var oreFissoM = cf.ordinario_fisso_ore || 173;
+    var oreStdMancanti = giorniRimanenti * (cf.ore_std || 8); // solo informativo
+    var impOrdMancanti = 0; // il fisso CCNL copre già l'intero mese
 
-    var impOrdGia2  = oreOrdGia  * (cf.paga      || 0);
+    var impOrdGia2  = oreFissoM  * (cf.paga      || 0);
     var impStraGia2 = oreStraGia * (cf.paga_stra || 0);
-    var impAssGia2  = assenzeGia * (cf.paga      || 0);
-    var impPermGia2 = permessiGia* (cf.paga      || 0);
     var rimGiaTot   = (cP*(cf.rimborso_cliente_pranzo||0))+(cC*(cf.rimborso_cliente_cena||0))+
                       (nP*(cf.rimborso_nostro_pranzo||0)) +(nC*(cf.rimborso_nostro_cena||0))+
                       (eP*(cf.rimborso_estero_pranzo||0)) +(eC*(cf.rimborso_estero_cena||0));
@@ -1652,11 +1799,11 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
     var giorniConTrasf2 = records.filter(function(r){
       var t=r.trasferte; if(!t) return false;
       if(typeof t==='number') return t>0;
-      return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena;
+      return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena||t.mezzaTrasf;
     }).length;
     var esente2    = giorniConTrasf2 > 0 ? Math.min(rimGiaTot/giorniConTrasf2, tetto2)*giorniConTrasf2 : 0;
     var tassabile2 = Math.max(0, rimGiaTot - esente2);
-    var lordoGia2  = impOrdGia2 + impStraGia2 + impAssGia2 + impPermGia2 + tassabile2;
+    var lordoGia2  = impOrdGia2 + impStraGia2 + tassabile2;
     var inpsGia2   = lordoGia2 * ((cf.inps||0)/100);
     var irpefGia2  = (lordoGia2 - inpsGia2) * ((cf.irpef||0)/100);
     var nettoGia2  = lordoGia2 - inpsGia2 - irpefGia2 + esente2;
@@ -1682,11 +1829,11 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
         '</div>' +
       '</div>' +
       '<div style="background:#fff3cd;border-radius:10px;padding:14px 16px;margin-bottom:10px;border:1px dashed #f5c842">' +
-        '<div style="font-size:11px;font-weight:600;color:#7a5700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">+ Giorni mancanti stimati (' + giorniRimanenti + ' × ' + (cf.ore_std||8) + 'h)</div>' +
+        '<div style="font-size:11px;font-weight:600;color:#7a5700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Giorni mancanti nel registro (' + giorniRimanenti + ' × ' + (cf.ore_std||8) + 'h)</div>' +
         '<div class="stats" style="margin-bottom:0">' +
-          '<div class="stat"><div class="stat-l">Ore stimate</div><div class="stat-v">' + oreStdMancanti.toFixed(0) + 'h</div></div>' +
-          '<div class="stat"><div class="stat-l">Importo stimato</div><div class="stat-v">' + impOrdMancanti.toFixed(2) + ' €</div></div>' +
+          '<div class="stat"><div class="stat-l">Ore non registrate</div><div class="stat-v">' + oreStdMancanti.toFixed(0) + 'h</div></div>' +
         '</div>' +
+        '<div style="font-size:10.5px;color:#9a7010;margin-top:8px;line-height:1.4">L\'ordinario in busta è comunque il fisso CCNL (' + oreFissoM.toFixed(0) + 'h) — le ore mancanti nel registro non riducono lo stipendio, ma vanno inserite per premio produttività e riepiloghi corretti.</div>' +
       '</div>' +
       '<div style="background:#1a1a18;border-radius:10px;padding:16px 18px">' +
         '<div style="font-size:11px;font-weight:600;color:#888780;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Totale mese stimato</div>' +
@@ -1699,13 +1846,14 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
           '<span style="color:#f5c842;font-size:20px;font-weight:700">' + nettoTotM.toFixed(2) + ' €</span>' +
         '</div>' +
       '</div>' +
-      '<div style="font-size:11px;color:#b4b2a9;margin-top:8px;text-align:center">* Stima a ' + (cf.ore_std||8) + 'h/giorno per i giorni mancanti. Nessuna trasferta stimata.</div>';
+      '<div style="font-size:11px;color:#b4b2a9;margin-top:8px;text-align:center">* Ordinario sul fisso CCNL. Nessuna trasferta stimata per i giorni mancanti.</div>';
     return;
   }
 
   // ── MESE FUTURO ──
   if(meseFuturo) {
-    var impOrdFut = oreRimanenti * (cf.paga || 0);
+    var oreFissoFut = cf.ordinario_fisso_ore || 173;
+    var impOrdFut = oreFissoFut * (cf.paga || 0);
     var lordoFut  = impOrdFut;
     var inpsFut   = lordoFut * ((cf.inps||0)/100);
     var irpefFut  = (lordoFut - inpsFut) * ((cf.irpef||0)/100);
@@ -1715,10 +1863,10 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
         '<div style="font-size:11px;font-weight:600;color:#185fa5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Previsione mese futuro</div>' +
         '<div class="stats" style="margin-bottom:10px">' +
           '<div class="stat"><div class="stat-l">Giorni lav.</div><div class="stat-v">' + giorniRimanenti + '</div></div>' +
-          '<div class="stat"><div class="stat-l">Ore previste</div><div class="stat-v">' + oreRimanenti.toFixed(0) + 'h</div><div class="stat-s">' + giorniRimanenti + ' × ' + (cf.ore_std||8) + 'h</div></div>' +
+          '<div class="stat"><div class="stat-l">Ordinario fisso</div><div class="stat-v">' + oreFissoFut.toFixed(0) + 'h</div><div class="stat-s">CCNL</div></div>' +
           '<div class="stat"><div class="stat-l">Netto stimato</div><div class="stat-v" style="color:#185fa5">' + nettoFut.toFixed(2) + ' €</div></div>' +
         '</div>' +
-        '<div style="font-size:11px;color:#5f8ab4">Solo ore ordinarie. Straordinari e trasferte non stimati.' + (addizTot>0 ? ' Addizionali (−' + addizTot.toFixed(2) + ' €) già detratte.' : '') + '</div>' +
+        '<div style="font-size:11px;color:#5f8ab4">Ordinario sul fisso CCNL. Straordinari e trasferte non stimati.' + (addizTot>0 ? ' Addizionali (−' + addizTot.toFixed(2) + ' €) già detratte.' : '') + '</div>' +
       '</div>';
     return;
   }
@@ -1726,12 +1874,12 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
   // ── MESE CORRENTE ──
 
   var tetto2 = cf.tetto_trasferte || 40;
+  var oreFissoCorr = cf.ordinario_fisso_ore || 173;
 
   // Ricalcola consuntivo CON tetto fiscale (uguale a calcolaBusta)
-  var impOrdGia2  = oreOrdGia  * (cf.paga      || 0);
-  var impStraGia2 = oreStraGia * (cf.paga_stra || 0);
-  var impAssGia2  = assenzeGia * (cf.paga      || 0);
-  var impPermGia2 = permessiGia* (cf.paga      || 0);
+  // L'ordinario è il fisso CCNL: non dipende da ore già inserite né da ore rimanenti.
+  var impOrdGia2  = oreFissoCorr * (cf.paga      || 0);
+  var impStraGia2 = oreStraGia   * (cf.paga_stra || 0);
   var rimGiaTot   = (cP*(cf.rimborso_cliente_pranzo||0))+(cC*(cf.rimborso_cliente_cena||0))+
                     (nP*(cf.rimborso_nostro_pranzo||0)) +(nC*(cf.rimborso_nostro_cena||0))+
                     (eP*(cf.rimborso_estero_pranzo||0)) +(eC*(cf.rimborso_estero_cena||0));
@@ -1739,31 +1887,22 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
   var giorniConTrasfGia = records.filter(function(r){
     var t=r.trasferte; if(!t) return false;
     if(typeof t==='number') return t>0;
-    return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena;
+    return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena||t.mezzaTrasf;
   }).length;
   var esenteGia    = giorniConTrasfGia > 0 ? Math.min(rimGiaTot/giorniConTrasfGia, tetto2)*giorniConTrasfGia : 0;
   var tassabileGia = Math.max(0, rimGiaTot - esenteGia);
-  var lordoGia     = impOrdGia2 + impStraGia2 + impAssGia2 + impPermGia2 + tassabileGia;
+  var lordoGia     = impOrdGia2 + impStraGia2 + tassabileGia;
   var inpsGia      = lordoGia * ((cf.inps||0)/100);
   var irpefGia     = (lordoGia - inpsGia) * ((cf.irpef||0)/100);
   var nettoGia     = lordoGia - inpsGia - irpefGia + esenteGia;
 
-  // Stima consuntivo giorni rimanenti CON tetto fiscale
-  var rimStimatiTot = rimStimati; // già calcolato sopra
-  var giorniConTrasfRim = Math.round(
-    (giorniConTrasfGia > 0 ? giorniConTrasfGia/Math.max(giorniGia,1) : 0) * giorniRimanenti
-  );
-  // Le TRASFERTE non si proiettano: nel preventivo contano solo quelle GIA' inserite.
-  // Per i giorni rimanenti si stimano soltanto le ore ordinarie.
+  // Giorni rimanenti: NON aggiungono altro importo ordinario (già coperto dal fisso).
+  // Le trasferte non si proiettano: nel preventivo contano solo quelle già inserite.
   var esenteRim    = 0;
   var tassabileRim = 0;
-  var lordoRim2    = impOrdRim + tassabileRim;
-  var inpsRim2     = lordoRim2 * ((cf.inps||0)/100);
-  var irpefRim2    = (lordoRim2 - inpsRim2) * ((cf.irpef||0)/100);
-  var nettoRim2    = lordoRim2 - inpsRim2 - irpefRim2 + esenteRim;
 
-  // TOTALE FINE MESE = consuntivo + stima rimanenti (lordi sommati, poi tassa)
-  var lordoTotBase = (impOrdGia2+impStraGia2+impAssGia2+impPermGia2) + impOrdRim + tassabileGia + tassabileRim;
+  // TOTALE FINE MESE = il fisso CCNL è già completo di suo, quindi coincide col consuntivo
+  var lordoTotBase = impOrdGia2 + impStraGia2 + tassabileGia + tassabileRim;
   var esenteTot    = esenteGia + esenteRim;
   var inpsTot      = lordoTotBase * ((cf.inps||0)/100);
   var irpefTot     = (lordoTotBase - inpsTot) * ((cf.irpef||0)/100);
@@ -1798,11 +1937,11 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
 
     // Blocco B — giorni rimanenti (giallo tratteggiato)
     '<div style="background:#fff3cd;border-radius:10px;padding:14px 16px;margin-bottom:10px;border:1px dashed #f5c842">' +
-      '<div style="font-size:11px;font-weight:600;color:#7a5700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">+ Giorni rimanenti stimati (' + giorniRimanenti + ' × ' + (cf.ore_std||8) + 'h)</div>' +
+      '<div style="font-size:11px;font-weight:600;color:#7a5700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Giorni ancora da inserire (' + giorniRimanenti + ' × ' + (cf.ore_std||8) + 'h)</div>' +
       '<div class="stats" style="margin-bottom:0">' +
-        '<div class="stat"><div class="stat-l">Ore stimate</div><div class="stat-v">' + oreRimanenti.toFixed(0) + 'h</div></div>' +
-        '<div class="stat"><div class="stat-l">Importo stimato</div><div class="stat-v">' + (oreRimanenti*(cf.paga||0)).toFixed(2) + ' €</div></div>' +
+        '<div class="stat"><div class="stat-l">Ore da registrare</div><div class="stat-v">' + oreRimanenti.toFixed(0) + 'h</div></div>' +
       '</div>' +
+      '<div style="font-size:10.5px;color:#9a7010;margin-top:8px;line-height:1.4">Non aggiungono importo: l\'ordinario è già il fisso CCNL (' + oreFissoCorr.toFixed(0) + 'h) sopra. Vanno comunque registrate per premio produttività e riepiloghi.</div>' +
     '</div>' +
 
     // Totale finale (scuro)
@@ -1831,6 +1970,7 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
 function initImpostazioni() {
   var c=cfg();
   document.getElementById('setOreStd').value=c.ore_std;
+  var ofEl=document.getElementById('setOreFisso'); if(ofEl) ofEl.value=c.ordinario_fisso_ore||173;
   var tEl=document.getElementById('setTettoTrasf'); if(tEl) tEl.value=c.tetto_trasferte||40;
   document.getElementById('setPaga').value=c.paga;
   document.getElementById('setPagaStra').value=c.paga_stra;
@@ -1838,13 +1978,20 @@ function initImpostazioni() {
   document.getElementById('setIrpef').value=c.irpef;
   var arEl=document.getElementById('setAddizReg'); if(arEl) arEl.value=c.addiz_regionale||0;
   var acEl=document.getElementById('setAddizCom'); if(acEl) acEl.value=c.addiz_comunale||0;
-  document.getElementById('setRimborsoClientePranzo').value=c.rimborso_cliente_pranzo;
-  document.getElementById('setRimborsoClienteCena').value=c.rimborso_cliente_cena;
-  document.getElementById('setRimborsoNostroPranzo').value=c.rimborso_nostro_pranzo;
-  document.getElementById('setRimborsoNostroCena').value=c.rimborso_nostro_cena;
+  document.getElementById('setCliente1P').value=c.cliente_1p;
+  document.getElementById('setCliente2P').value=c.cliente_2p;
+  document.getElementById('setCliente1PPern').value=c.cliente_1p_pern;
+  document.getElementById('setCliente2PPern').value=c.cliente_2p_pern;
+  document.getElementById('setNostro0P').value=c.nostro_0p;
+  document.getElementById('setNostro1P').value=c.nostro_1p;
+  document.getElementById('setNostro2P').value=c.nostro_2p;
+  document.getElementById('setNostro0PPern').value=c.nostro_0p_pern;
+  document.getElementById('setNostro1PPern').value=c.nostro_1p_pern;
+  document.getElementById('setNostro2PPern').value=c.nostro_2p_pern;
   document.getElementById('setRimborsoEsteroPranzo').value=c.rimborso_estero_pranzo||40;
   document.getElementById('setRimborsoEsteroCena').value=c.rimborso_estero_cena||50;
   document.getElementById('infoCount').textContent='Record salvati: '+db().length;
+  var verEl=document.getElementById('infoVersione'); if(verEl) verEl.textContent='App versione: '+APP_VERSION;
   var pEl=document.getElementById('setPremio'); if(pEl) pEl.value=c.premio_produttivita||0;
   var pinSalvato = localStorage.getItem('rl_pin');
   document.getElementById('pinStatoLabel').textContent = pinSalvato ? 'PIN attivo ✓' : 'Non impostato';
@@ -1852,16 +1999,23 @@ function initImpostazioni() {
 function salvaImpostazioni() {
   saveCfg({
     ore_std: parseFloat(document.getElementById('setOreStd').value)||8,
+    ordinario_fisso_ore: parseFloat(document.getElementById('setOreFisso').value)||173,
     paga:    parseFloat(document.getElementById('setPaga').value)||0,
     paga_stra: parseFloat(document.getElementById('setPagaStra').value)||0,
     inps:    parseFloat(document.getElementById('setInps').value)||0,
     irpef:   parseFloat(document.getElementById('setIrpef').value)||0,
     addiz_regionale: parseFloat(document.getElementById('setAddizReg').value)||0,
     addiz_comunale:  parseFloat(document.getElementById('setAddizCom').value)||0,
-    rimborso_cliente_pranzo: parseFloat(document.getElementById('setRimborsoClientePranzo').value)||0,
-    rimborso_cliente_cena:   parseFloat(document.getElementById('setRimborsoClienteCena').value)||0,
-    rimborso_nostro_pranzo:  parseFloat(document.getElementById('setRimborsoNostroPranzo').value)||0,
-    rimborso_nostro_cena:    parseFloat(document.getElementById('setRimborsoNostroCena').value)||0,
+    cliente_1p: parseFloat(document.getElementById('setCliente1P').value)||0,
+    cliente_2p: parseFloat(document.getElementById('setCliente2P').value)||0,
+    cliente_1p_pern: parseFloat(document.getElementById('setCliente1PPern').value)||0,
+    cliente_2p_pern: parseFloat(document.getElementById('setCliente2PPern').value)||0,
+    nostro_0p: parseFloat(document.getElementById('setNostro0P').value)||0,
+    nostro_1p: parseFloat(document.getElementById('setNostro1P').value)||0,
+    nostro_2p: parseFloat(document.getElementById('setNostro2P').value)||0,
+    nostro_0p_pern: parseFloat(document.getElementById('setNostro0PPern').value)||0,
+    nostro_1p_pern: parseFloat(document.getElementById('setNostro1PPern').value)||0,
+    nostro_2p_pern: parseFloat(document.getElementById('setNostro2PPern').value)||0,
     rimborso_estero_pranzo: parseFloat(document.getElementById('setRimborsoEsteroPranzo').value)||0,
     rimborso_estero_cena:   parseFloat(document.getElementById('setRimborsoEsteroCena').value)||0,
     tetto_trasferte: parseFloat(document.getElementById('setTettoTrasf').value)||40,
@@ -2103,7 +2257,7 @@ function aggiornaGrafici() {
     if((r.ore_tot||0) > 0){
       var t = r.trasferte||{};
       var conTrasf = (typeof t==='number') ? t>0 :
-        (t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena);
+        (t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena||t.mezzaTrasf);
       if(conTrasf) gFuori++; else gDitta++;
     }
   });
@@ -2250,15 +2404,37 @@ function aggiornaGrafici() {
   var giorniConTrasf = records.filter(function(r){
     var t=r.trasferte; if(!t) return false;
     if(typeof t==='number') return t>0;
-    return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena;
+    return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena||t.mezzaTrasf;
   }).length;
   var tetto  = c.tetto_trasferte || 40;
   var esenteTot = giorniConTrasf>0 ? Math.min(rimTot/giorniConTrasf, tetto)*giorniConTrasf : 0;
   var tassabileTot = Math.max(0, rimTot - esenteTot);
   var totAssOre = totMal + totFer;
-  var impOrd  = totOrd  * (c.paga||0);
+  // NOTA: qui isMese non è ancora calcolato (viene dopo) — lo anticipiamo per decidere
+  // se applicare il fisso CCNL (mese intero) o la stima ore-per-ore (range arbitrario).
+  var isMeseAnticipato = false;
+  if(da && a){
+    var _daSplit=da.split('-'), _aSplit=a.split('-');
+    if(_daSplit[0]===_aSplit[0] && _daSplit[1]===_aSplit[1]){
+      var _annoM=parseInt(_daSplit[0]), _meseM=parseInt(_daSplit[1])-1;
+      var _atteso1=_annoM+'-'+String(_meseM+1).padStart(2,'0')+'-01';
+      var _ultimoG=new Date(_annoM,_meseM+1,0).getDate();
+      var _attesoU=_annoM+'-'+String(_meseM+1).padStart(2,'0')+'-'+String(_ultimoG).padStart(2,'0');
+      if(da===_atteso1 && a===_attesoU) isMeseAnticipato=true;
+    }
+  }
+  var impOrd, impAss;
+  if(isMeseAnticipato) {
+    // Mese intero selezionato: ordinario = fisso CCNL, assenze/permessi già ricomprese nel fisso
+    impOrd = (c.ordinario_fisso_ore||173) * (c.paga||0);
+    impAss = 0;
+  } else {
+    // Range arbitrario (non un mese intero): il fisso CCNL non è applicabile,
+    // si mantiene la stima ore-per-ore come approssimazione.
+    impOrd = totOrd * (c.paga||0);
+    impAss = totAssOre * (c.paga||0);
+  }
   var impStra = totStra * (c.paga_stra||0);
-  var impAss  = totAssOre * (c.paga||0);
   var lordo   = impOrd + impStra + impAss + tassabileTot;
   var inps    = lordo * ((c.inps||0)/100);
   var irpef   = (lordo-inps) * ((c.irpef||0)/100);
@@ -2350,34 +2526,27 @@ function aggiornaGrafici() {
         htmlBusta+='<div style="text-align:center;padding:12px;color:#3b6d11;font-size:13px;">✅ Mese completato — tutti i giorni inseriti.</div>';
       } else {
         var oreManc=giorniMancanti*oreStd;
-        var impManc=oreManc*(c.paga||0);
-        var lordoTotM=lordo+impManc;
+        // Il fisso CCNL copre già l'intero mese: le ore mancanti nel registro
+        // non riducono né aumentano l'importo, servono solo per premio/riepiloghi.
+        var lordoTotM=lordo;
         var inpsTotM=lordoTotM*((c.inps||0)/100);
         var irpefTotM=(lordoTotM-inpsTotM)*((c.irpef||0)/100);
         var nettoTotM=lordoTotM-inpsTotM-irpefTotM-addizTotC+esenteTot;
         htmlBusta+=
           '<div style="background:#fff8e1;border:1.5px solid #f5c842;border-radius:10px;padding:12px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start">'+
             '<span style="font-size:18px">⚠️</span>'+
-            '<div style="font-size:12px;color:#7a5700"><b>'+giorniMancanti+' giorn'+(giorniMancanti===1?'o':'i')+' non inserit'+(giorniMancanti===1?'o':'i')+'</b><br>'+
-            'Stima con '+giorniMancanti+'×'+oreStd+'h aggiuntive:</div>'+
+            '<div style="font-size:12px;color:#7a5700"><b>'+giorniMancanti+' giorn'+(giorniMancanti===1?'o':'i')+' non inserit'+(giorniMancanti===1?'o':'i')+' nel registro</b><br>'+
+            'L\'ordinario in busta è comunque il fisso CCNL — mancano solo dal registro:</div>'+
           '</div>'+
           '<div style="display:flex;gap:10px;margin-bottom:10px">'+
-            '<div class="stat" style="flex:1"><div class="stat-l">Ore mancanti</div><div class="stat-v">'+oreManc.toFixed(0)+'h</div><div class="stat-s">'+impManc.toFixed(2)+' €</div></div>'+
+            '<div class="stat" style="flex:1"><div class="stat-l">Ore non registrate</div><div class="stat-v">'+oreManc.toFixed(0)+'h</div></div>'+
             '<div class="stat" style="flex:1"><div class="stat-l">Netto stimato</div><div class="stat-v" style="color:#f5c842">'+nettoTotM.toFixed(2)+' €</div></div>'+
           '</div>';
       }
     } else if(meseCor){
-      // Mese corrente: A inserito + B rimanenti
+      // Mese corrente: A inserito (fisso CCNL già completo) + B rimanenti (solo registro, no importo)
       var oreRim2=giorniRim*oreStd;
-      var impRim2=oreRim2*(c.paga||0);
-      var lordoRim2=impRim2;
-      var inpsRim2=lordoRim2*((c.inps||0)/100);
-      var irpefRim2=(lordoRim2-inpsRim2)*((c.irpef||0)/100);
-      var nettoRim2=lordoRim2-inpsRim2-irpefRim2;
-      var lordoTot2=lordo+lordoRim2;
-      var inpsTot2=lordoTot2*((c.inps||0)/100);
-      var irpefTot2=(lordoTot2-inpsTot2)*((c.irpef||0)/100);
-      var nettoTot2=lordoTot2-inpsTot2-irpefTot2+esenteTot;
+      var nettoTot2=netto; // il fisso CCNL è già completo di suo: A = A+B
       htmlBusta+=
         '<div style="display:flex;gap:8px;font-size:12px;color:#5f5e5a;margin-bottom:12px">'+
           '<span>Inseriti: <b style="color:#1a1a18">'+giorniGia+'</b></span>'+
@@ -2385,34 +2554,31 @@ function aggiornaGrafici() {
           '<span>Rimanenti (lun–ven): <b style="color:#185fa5">'+giorniRim+'</b></span>'+
         '</div>'+
         '<div style="background:#f9f8f5;border-radius:10px;padding:12px 14px;margin-bottom:8px">'+
-          '<div style="font-size:10px;font-weight:700;color:#5f5e5a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">A · Già inserito ('+giorniGia+' gg)</div>'+
+          '<div style="font-size:10px;font-weight:700;color:#5f5e5a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Ordinario fisso CCNL + già inserito ('+giorniGia+' gg)</div>'+
           '<div style="display:flex;gap:8px">'+
-            '<div class="stat" style="flex:1"><div class="stat-l">Ore inserite</div><div class="stat-v">'+totOrd.toFixed(1)+'h</div></div>'+
+            '<div class="stat" style="flex:1"><div class="stat-l">Ore registrate</div><div class="stat-v">'+totOrd.toFixed(1)+'h</div></div>'+
             '<div class="stat" style="flex:1"><div class="stat-l">Netto reale</div><div class="stat-v" style="color:#3b6d11">'+netto.toFixed(2)+' €</div></div>'+
           '</div>'+
         '</div>'+
         '<div style="background:#e6f1fb;border-radius:10px;padding:12px 14px;margin-bottom:8px">'+
-          '<div style="font-size:10px;font-weight:700;color:#185fa5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">B · Previsione ('+giorniRim+' gg × '+oreStd+'h)</div>'+
-          '<div style="display:flex;gap:8px">'+
-            '<div class="stat" style="flex:1"><div class="stat-l">Ore previste</div><div class="stat-v">'+oreRim2.toFixed(0)+'h</div></div>'+
-            '<div class="stat" style="flex:1"><div class="stat-l">Netto stimato</div><div class="stat-v" style="color:#185fa5">'+nettoRim2.toFixed(2)+' €</div></div>'+
-          '</div>'+
+          '<div style="font-size:10px;font-weight:700;color:#185fa5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Giorni ancora da registrare ('+giorniRim+' gg × '+oreStd+'h)</div>'+
+          '<div style="font-size:11px;color:#5f8ab4">'+oreRim2.toFixed(0)+'h non ancora nel registro — non cambiano l\'importo (già coperto dal fisso), ma servono per premio produttività e riepiloghi.</div>'+
         '</div>'+
         '<div style="background:#1a1a18;border-radius:10px;padding:14px 16px">'+
           '<div style="display:flex;justify-content:space-between;align-items:center">'+
-            '<span style="color:#f5f4f0;font-weight:600;font-size:13px">A + B · Netto a fine mese</span>'+
+            '<span style="color:#f5f4f0;font-weight:600;font-size:13px">Netto stimato a fine mese</span>'+
             '<span style="color:#7ec8e3;font-size:18px;font-weight:700">'+nettoTot2.toFixed(2)+' €</span>'+
           '</div>'+
         '</div>';
     } else if(meseFut){
       var oreF=giorniRim*oreStd;
-      var lrdF=oreF*(c.paga||0);
+      var lrdF=(c.ordinario_fisso_ore||173)*(c.paga||0);
       var nttF=lrdF-lrdF*((c.inps||0)/100)-(lrdF-lrdF*((c.inps||0)/100))*((c.irpef||0)/100);
       htmlBusta+=
         '<div style="background:#e6f1fb;border-radius:10px;padding:12px 14px">'+
           '<div style="display:flex;gap:10px">'+
             '<div class="stat" style="flex:1"><div class="stat-l">Giorni lav.</div><div class="stat-v">'+giorniRim+'</div></div>'+
-            '<div class="stat" style="flex:1"><div class="stat-l">Ore previste</div><div class="stat-v">'+oreF.toFixed(0)+'h</div></div>'+
+            '<div class="stat" style="flex:1"><div class="stat-l">Ordinario fisso</div><div class="stat-v">'+(c.ordinario_fisso_ore||173).toFixed(0)+'h</div></div>'+
             '<div class="stat" style="flex:1"><div class="stat-l">Netto stimato</div><div class="stat-v" style="color:#185fa5">'+nttF.toFixed(2)+' €</div></div>'+
           '</div>'+
         '</div>';
@@ -2550,19 +2716,20 @@ function apriModifica(idx, fromScreen) {
   document.getElementById('mNote').value      = r.note     || '';
   document.getElementById('mMalattia').checked = !!(r.malattia && r.malattia > 0);
   document.getElementById('mFerie').checked    = !!(r.ferie    && r.ferie    > 0);
+  document.getElementById('mFestivita').checked = !!(r.festivita && r.festivita > 0);
   document.getElementById('mIdx').value       = idx;
   document.getElementById('mOrigScreen').value = fromScreen;
   document.getElementById('mPrevCalc').style.display = 'none';
 
   // trasferte
-  ['m_clientePranzo','m_clienteCena','m_nostroPranzo','m_nostroCena','m_esteroPranzo','m_esteroCena'].forEach(function(id) {
+  ['m_clientePranzo','m_clienteCena','m_nostroPranzo','m_nostroCena','m_esteroPranzo','m_esteroCena','m_pernottamento','m_mezzaTrasf'].forEach(function(id) {
     var el = document.getElementById(id);
     if(el){ el.classList.remove('attiva'); el.querySelector('.chk').textContent = '☐'; }
   });
   var t = r.trasferte;
   if(t && typeof t === 'object') {
     var mmap = {clientePranzo:'m_clientePranzo',clienteCena:'m_clienteCena',nostroPranzo:'m_nostroPranzo',nostroCena:'m_nostroCena',
-      esteroPranzo:'m_esteroPranzo',esteroCena:'m_esteroCena'};
+      esteroPranzo:'m_esteroPranzo',esteroCena:'m_esteroCena',pernottamento:'m_pernottamento',mezzaTrasf:'m_mezzaTrasf'};
     Object.keys(mmap).forEach(function(k){ if(t[k]){ var e=document.getElementById(mmap[k]); if(e){e.classList.add('attiva');e.querySelector('.chk').textContent='☒';}} });
   }
 
@@ -2592,7 +2759,9 @@ function getMTrasfData() {
     nostroPranzo:        document.getElementById('m_nostroPranzo').classList.contains('attiva'),
     nostroCena:          document.getElementById('m_nostroCena').classList.contains('attiva'),
     esteroPranzo: document.getElementById('m_esteroPranzo').classList.contains('attiva'),
-    esteroCena:   document.getElementById('m_esteroCena').classList.contains('attiva')
+    esteroCena:   document.getElementById('m_esteroCena').classList.contains('attiva'),
+    pernottamento: document.getElementById('m_pernottamento') ? document.getElementById('m_pernottamento').classList.contains('attiva') : false,
+    mezzaTrasf: document.getElementById('m_mezzaTrasf') ? document.getElementById('m_mezzaTrasf').classList.contains('attiva') : false
   };
 }
 
@@ -2619,6 +2788,7 @@ function salvaModifica() {
     km:        parseInt(document.getElementById('mKm').value)       || 0,
     malattia:  document.getElementById('mMalattia').checked ? 8 : 0,
     ferie:     document.getElementById('mFerie').checked    ? 8 : 0,
+    festivita: document.getElementById('mFestivita').checked ? 8 : 0,
     permessi:  parseFloat(document.getElementById('mPermessi').value) || 0,
     codici:    document.getElementById('mCodici').value.trim().toUpperCase(),
     note:      document.getElementById('mNote').value.trim()
@@ -2877,6 +3047,7 @@ function rimuoviPin() {
   setVal('filtMese', fmtMese(new Date()));
   setVal('bustaMese', fmtMese(new Date()));
   try { aggiornaHome(); } catch(e) { console.error('init error:', e); }
+  var cvEl = document.getElementById('creditsVersione'); if(cvEl) cvEl.textContent = APP_VERSION;
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
