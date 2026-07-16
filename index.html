@@ -38,6 +38,18 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#eceff1;color:#1a1a1
 .home-sum b{color:#1a1a18;}
 .cards{display:flex;flex-direction:column;gap:12px;}
 .card{background:#fff;border:1px solid #d3d1c7;border-radius:14px;padding:20px 22px;display:flex;align-items:center;gap:16px;cursor:pointer;width:100%;font-family:inherit;text-align:left;transition:border-color .15s,background .15s;}
+
+/* ── Assemblaggio frammenti Home (solo al primo avvio) ── */
+.frag-holder{position:relative;}
+.frag{position:absolute;opacity:0;overflow:hidden;will-change:transform,opacity;}
+.frag>.card{position:absolute;margin:0;pointer-events:none;}
+@keyframes fragIn{
+  0%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(.5);}
+  60%{opacity:1;}
+  100%{opacity:1;transform:translate(0,0) rotate(0) scale(1);}
+}
+.frag.play{animation:fragIn 360ms cubic-bezier(.2,.8,.2,1) forwards;animation-delay:var(--delay,0ms);}
+@media (prefers-reduced-motion: reduce){.frag{animation:none!important;opacity:1!important;transform:none!important;}}
 .card:hover{border-color:#888;background:#fafaf8;}
 .card-ico{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
 .ico-g{background:#eaf3de;}.ico-b{background:#e6f1fb;}.ico-gr{background:#f1efe8;}.ico-n{background:#fce4d6;}.ico-p{background:#d4e6f1;}.ico-v{background:#ede6f5;}
@@ -776,7 +788,7 @@ tr:hover td{background:#fafaf8;}
 <div id="toast"></div>
 
 <script>
-var APP_VERSION = 'v21';
+var APP_VERSION = 'v26';
 var DB_KEY  = 'rl_db_v3';
 var CFG_KEY = 'rl_cfg_v3';
 var MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
@@ -843,7 +855,7 @@ function aggiornaHome() {
   var rows = db().filter(function(r){ return r.data && r.data.startsWith(mese); });
   var ore = rows.reduce(function(s,r){ return s+(r.ore_tot||0); },0);
   var stra = rows.reduce(function(s,r){ return s+(r.ore_stra||0); },0);
-  var assenze = rows.reduce(function(s,r){ return s+(r.malattia||0)+(r.ferie||0)+(r.permessi||0); },0);
+  var assenze = rows.reduce(function(s,r){ return s+(r.malattia||0)+(r.ferie||0)+(r.festivita||0)+(r.permessi||0); },0);
   document.getElementById('homeSum').innerHTML =
     '<b>'+MESI[now.getMonth()]+'</b>: '+ore.toFixed(1)+'h lavorate &nbsp;·&nbsp; Straord: '+stra.toFixed(1)+'h<br>Assenze: '+assenze+'h &nbsp;·&nbsp; Totale record: '+db().length;
 }
@@ -1219,7 +1231,7 @@ function renderStats() {
     oreOrd  += r.ore_ord  || 0;
     oreStra += r.ore_stra || 0;
     kmTot   += r.km       || 0;
-    assenzeTot += (r.malattia||0)+(r.ferie||0)+(r.permessi||0);
+    assenzeTot += (r.malattia||0)+(r.ferie||0)+(r.festivita||0)+(r.permessi||0);
   });
   var p = mese.split('-');
   var ML = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
@@ -1368,9 +1380,9 @@ function renderRiepilogo() {
     rows.forEach(function(r){
       var d2=new Date(r.data+'T12:00:00'); var dow=d2.getDay();
       if((dow===0||dow===6) && (r.ore_stra||0)===0) return; // sab/dom senza straord: salta
-      if((r.ore_tot||0)>0||(r.malattia||0)>0||(r.ferie||0)>0) giorni++;
+      if((r.ore_tot||0)>0||(r.malattia||0)>0||(r.ferie||0)>0||(r.festivita||0)>0) giorni++;
       oreTot+=r.ore_tot||0; oreOrd+=r.ore_ord||0; oreStra+=r.ore_stra||0;
-      kmTot+=r.km||0; assenzeTot+=(r.malattia||0)+(r.ferie||0)+(r.permessi||0);
+      kmTot+=r.km||0; assenzeTot+=(r.malattia||0)+(r.ferie||0)+(r.festivita||0)+(r.permessi||0);
     });
     if(!giorni){ html+='<tr><td style="color:#bbb">'+MESI[mi]+'</td><td colspan="6" style="color:#ddd">—</td></tr>'; continue; }
     hasData=true;
@@ -1417,37 +1429,42 @@ function calcolaRiepilogo() {
   }
   var records=db().filter(function(r){ return (!dataDa||r.data>=dataDa)&&(!dataA||r.data<=dataA); });
   var cP=0,cC=0,nP=0,nC=0,eP=0,eC=0,spP=0,spC=0,totKm=0;
+  var rimItaliaR=0, giorniPernR=0, giorniMezzaR=0;
   records.forEach(function(r){
     var t=r.trasferte;
     if(t && typeof t === 'object') {
       if(t.clientePranzo) cP++; if(t.clienteCena) cC++;
       if(t.nostroPranzo)  nP++; if(t.nostroCena)  nC++;
       if(t.esteroPranzo)  eP++; if(t.esteroCena)  eC++;
+      if(t.pernottamento) giorniPernR++;
+      if(t.mezzaTrasf)     giorniMezzaR++;
+      var giornoHaItalia = t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.pernottamento||t.mezzaTrasf;
+      if(giornoHaItalia) rimItaliaR += calcolaRimborsoGiornoItalia(t, c);
     } else if(typeof t === 'number' && t > 0) {
       nP++; // vecchio formato: trasferta a nostro carico generica
     }
     spP+=r.spesa_pranzo||0; spC+=r.spesa_cena||0; totKm+=r.km||0;
   });
-  var tCP=cP*c.rimborso_cliente_pranzo, tCC=cC*c.rimborso_cliente_cena;
-  var tNP=nP*c.rimborso_nostro_pranzo,  tNC=nC*c.rimborso_nostro_cena;
   var tEP=eP*(c.rimborso_estero_pranzo||40), tEC=eC*(c.rimborso_estero_cena||50);
-  var totCli=tCP+tCC, totNos=tNP+tNC, totEst=tEP+tEC, totTrasf=totCli+totNos+totEst;
+  var totEst=tEP+tEC, totTrasf=rimItaliaR+totEst;
 
     document.getElementById('riepilogoTrasferte').innerHTML =
     '<div class="sec-lbl" style="margin-top:0">Italia</div>' +
     '<div class="stats">' +
-      '<div class="stat"><div class="stat-l">Pranzi Cli.</div><div class="stat-v">' + cP + '</div><div class="stat-s">' + tCP.toFixed(2) + ' €</div></div>' +
-      '<div class="stat"><div class="stat-l">Cene Cli.</div><div class="stat-v">' + cC + '</div><div class="stat-s">' + tCC.toFixed(2) + ' €</div></div>' +
-      '<div class="stat"><div class="stat-l">Pranzi Nos.</div><div class="stat-v">' + nP + '</div><div class="stat-s">' + tNP.toFixed(2) + ' €</div></div>' +
-      '<div class="stat"><div class="stat-l">Cene Nos.</div><div class="stat-v">' + nC + '</div><div class="stat-s">' + tNC.toFixed(2) + ' €</div></div>' +
+      '<div class="stat"><div class="stat-l">Pranzi Cli.</div><div class="stat-v">' + cP + '</div></div>' +
+      '<div class="stat"><div class="stat-l">Cene Cli.</div><div class="stat-v">' + cC + '</div></div>' +
+      '<div class="stat"><div class="stat-l">Pranzi Nos.</div><div class="stat-v">' + nP + '</div></div>' +
+      '<div class="stat"><div class="stat-l">Cene Nos.</div><div class="stat-v">' + nC + '</div></div>' +
+      (giorniPernR>0 ? '<div class="stat"><div class="stat-l">🛏 Pernott.</div><div class="stat-v">' + giorniPernR + '</div></div>' : '') +
+      (giorniMezzaR>0 ? '<div class="stat"><div class="stat-l">🚗½ Mezza trasf.</div><div class="stat-v">' + giorniMezzaR + '</div></div>' : '') +
     '</div>' +
+    '<div style="font-size:10.5px;color:#7a7c82;margin:4px 0 8px">Rimborso Italia calcolato a pacchetto per giornata (non somma lineare dei singoli pasti).</div>' +
     '<div class="sec-lbl">Estero</div>' +
     '<div class="stats">' +
       '<div class="stat"><div class="stat-l">Pranzi Estero</div><div class="stat-v">' + eP + '</div><div class="stat-s">' + tEP.toFixed(2) + ' €</div></div>' +
       '<div class="stat"><div class="stat-l">Cene Estero</div><div class="stat-v">' + eC + '</div><div class="stat-s">' + tEC.toFixed(2) + ' €</div></div>' +
     '</div>' +
-    '<div class="res-row"><span>Rimborsi Italia (Cliente)</span><span><b>' + totCli.toFixed(2) + ' €</b></span></div>' +
-    '<div class="res-row"><span>Rimborsi Italia (Nostro)</span><span><b>' + totNos.toFixed(2) + ' €</b></span></div>' +
+    '<div class="res-row"><span>Rimborsi Italia (a pacchetto)</span><span><b>' + rimItaliaR.toFixed(2) + ' €</b></span></div>' +
     '<div class="res-row"><span>Rimborsi Estero</span><span><b>' + totEst.toFixed(2) + ' €</b></span></div>' +
     '<div class="res-row res-tot"><span><b>Totale Trasferte</b></span><span><b>' + totTrasf.toFixed(2) + ' €</b></span></div>';
 
@@ -1738,7 +1755,7 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
 
   // giorni lavorativi effettivamente registrati nel DB per questo mese
   var giorniGia = records.filter(function(r){
-    return (r.ore_tot||0) > 0 || (r.malattia||0) > 0 || (r.ferie||0) > 0;
+    return (r.ore_tot||0) > 0 || (r.malattia||0) > 0 || (r.ferie||0) > 0 || (r.festivita||0) > 0;
   }).length;
 
   // giorni rimanenti = totale lun-ven del mese - giorni già registrati
@@ -1792,17 +1809,22 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
 
     var impOrdGia2  = oreFissoM  * (cf.paga      || 0);
     var impStraGia2 = oreStraGia * (cf.paga_stra || 0);
-    var rimGiaTot   = (cP*(cf.rimborso_cliente_pranzo||0))+(cC*(cf.rimborso_cliente_cena||0))+
-                      (nP*(cf.rimborso_nostro_pranzo||0)) +(nC*(cf.rimborso_nostro_cena||0))+
-                      (eP*(cf.rimborso_estero_pranzo||0)) +(eC*(cf.rimborso_estero_cena||0));
-    var tetto2 = cf.tetto_trasferte || 40;
-    var giorniConTrasf2 = records.filter(function(r){
-      var t=r.trasferte; if(!t) return false;
-      if(typeof t==='number') return t>0;
-      return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena||t.mezzaTrasf;
-    }).length;
-    var esente2    = giorniConTrasf2 > 0 ? Math.min(rimGiaTot/giorniConTrasf2, tetto2)*giorniConTrasf2 : 0;
-    var tassabile2 = Math.max(0, rimGiaTot - esente2);
+    // Trasferte: sistema a pacchetto per giornata (stesso calcolo di calcolaBusta),
+    // NON somma lineare pranzo+cena.
+    var rimGiaTot = 0, esente2 = 0, tassabile2 = 0, giorniConTrasf2 = 0;
+    records.forEach(function(r){
+      var t = r.trasferte;
+      if(t && typeof t === 'object') {
+        var giornoHaItalia = t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.pernottamento||t.mezzaTrasf;
+        if(giornoHaItalia) {
+          var fisco = calcolaFiscoGiornoItalia(t, cf);
+          rimGiaTot += fisco.esente + fisco.tassabile;
+          esente2 += fisco.esente;
+          tassabile2 += fisco.tassabile;
+          giorniConTrasf2++;
+        }
+      }
+    });
     var lordoGia2  = impOrdGia2 + impStraGia2 + tassabile2;
     var inpsGia2   = lordoGia2 * ((cf.inps||0)/100);
     var irpefGia2  = (lordoGia2 - inpsGia2) * ((cf.irpef||0)/100);
@@ -1873,24 +1895,28 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
 
   // ── MESE CORRENTE ──
 
-  var tetto2 = cf.tetto_trasferte || 40;
   var oreFissoCorr = cf.ordinario_fisso_ore || 173;
 
   // Ricalcola consuntivo CON tetto fiscale (uguale a calcolaBusta)
   // L'ordinario è il fisso CCNL: non dipende da ore già inserite né da ore rimanenti.
   var impOrdGia2  = oreFissoCorr * (cf.paga      || 0);
   var impStraGia2 = oreStraGia   * (cf.paga_stra || 0);
-  var rimGiaTot   = (cP*(cf.rimborso_cliente_pranzo||0))+(cC*(cf.rimborso_cliente_cena||0))+
-                    (nP*(cf.rimborso_nostro_pranzo||0)) +(nC*(cf.rimborso_nostro_cena||0))+
-                    (eP*(cf.rimborso_estero_pranzo||0)) +(eC*(cf.rimborso_estero_cena||0));
-  // Applica tetto fiscale ai giorni già registrati
-  var giorniConTrasfGia = records.filter(function(r){
-    var t=r.trasferte; if(!t) return false;
-    if(typeof t==='number') return t>0;
-    return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena||t.mezzaTrasf;
-  }).length;
-  var esenteGia    = giorniConTrasfGia > 0 ? Math.min(rimGiaTot/giorniConTrasfGia, tetto2)*giorniConTrasfGia : 0;
-  var tassabileGia = Math.max(0, rimGiaTot - esenteGia);
+  // Trasferte: sistema a pacchetto per giornata (stesso calcolo di calcolaBusta),
+  // NON somma lineare pranzo+cena.
+  var rimGiaTot = 0, esenteGia = 0, tassabileGia = 0, giorniConTrasfGia = 0;
+  records.forEach(function(r){
+    var t = r.trasferte;
+    if(t && typeof t === 'object') {
+      var giornoHaItalia = t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.pernottamento||t.mezzaTrasf;
+      if(giornoHaItalia) {
+        var fisco = calcolaFiscoGiornoItalia(t, cf);
+        rimGiaTot += fisco.esente + fisco.tassabile;
+        esenteGia += fisco.esente;
+        tassabileGia += fisco.tassabile;
+        giorniConTrasfGia++;
+      }
+    }
+  });
   var lordoGia     = impOrdGia2 + impStraGia2 + tassabileGia;
   var inpsGia      = lordoGia * ((cf.inps||0)/100);
   var irpefGia     = (lordoGia - inpsGia) * ((cf.irpef||0)/100);
@@ -2197,6 +2223,7 @@ function aggiornaGrafici() {
   var totStra = oreStra.reduce(function(s,v){return s+v;},0);
   var totMal  = records.reduce(function(s,r){return s+(r.malattia||0);},0);
   var totFer  = records.reduce(function(s,r){return s+(r.ferie||0);},0);
+  var totFest = records.reduce(function(s,r){return s+(r.festivita||0);},0);
   var totPer  = records.reduce(function(s,r){return s+(r.permessi||0);},0);
   var totKm   = kmList.reduce(function(s,v){return s+v;},0);
 
@@ -2227,9 +2254,9 @@ function aggiornaGrafici() {
   // ── Grafico Donut distribuzione ──
   var ctxDonut = document.getElementById('chartDonut').getContext('2d');
   if(chartDonutInst) chartDonutInst.destroy();
-  var donutData   = [totOrd, totStra, totMal, totFer, totPer].filter(function(v,i){return v>0;});
-  var donutLabels = ['Ordinarie','Straordinari','Malattia','Ferie','Permessi'].filter(function(l,i){return [totOrd,totStra,totMal,totFer,totPer][i]>0;});
-  var donutColors = ['#4a90d9','#f0a500','#e57373','#64b5f6','#ba68c8'].filter(function(c,i){return [totOrd,totStra,totMal,totFer,totPer][i]>0;});
+  var donutData   = [totOrd, totStra, totMal, totFer, totFest, totPer].filter(function(v,i){return v>0;});
+  var donutLabels = ['Ordinarie','Straordinari','Malattia','Ferie','Festività','Permessi'].filter(function(l,i){return [totOrd,totStra,totMal,totFer,totFest,totPer][i]>0;});
+  var donutColors = ['#4a90d9','#f0a500','#e57373','#64b5f6','#ab47bc','#ba68c8'].filter(function(c,i){return [totOrd,totStra,totMal,totFer,totFest,totPer][i]>0;});
   chartDonutInst = new Chart(ctxDonut, {
     type: 'doughnut',
     data: {
@@ -2248,11 +2275,12 @@ function aggiornaGrafici() {
   // ── Grafico a Torta Giornate (dove sei stato) ──
   var ctxGiorni = document.getElementById('chartGiorni').getContext('2d');
   if(chartGiorniInst) chartGiorniInst.destroy();
-  var gFuori=0, gDitta=0, gMal=0, gFer=0, gPerm=0;
+  var gFuori=0, gDitta=0, gMal=0, gFer=0, gFest=0, gPerm=0;
   records.forEach(function(r){
     // ogni giorno conta una volta sola, per priorità
     if((r.malattia||0) > 0){ gMal++; return; }
     if((r.ferie||0) > 0){ gFer++; return; }
+    if((r.festivita||0) > 0){ gFest++; return; }
     if((r.permessi||0) > 0 && (r.ore_tot||0) === 0){ gPerm++; return; }
     if((r.ore_tot||0) > 0){
       var t = r.trasferte||{};
@@ -2261,9 +2289,9 @@ function aggiornaGrafici() {
       if(conTrasf) gFuori++; else gDitta++;
     }
   });
-  var gVals   = [gFuori, gDitta, gMal, gFer, gPerm];
-  var gLabels = ['Fuori sede (interventi)','In ditta','Malattia','Ferie','Permessi'];
-  var gColors = ['#43a047','#f0a500','#e53935','#29b6f6','#4a90d9'];
+  var gVals   = [gFuori, gDitta, gMal, gFer, gFest, gPerm];
+  var gLabels = ['Fuori sede (interventi)','In ditta','Malattia','Ferie','Festività','Permessi'];
+  var gColors = ['#43a047','#f0a500','#e53935','#29b6f6','#ab47bc','#4a90d9'];
   var gTot = gVals.reduce(function(s,v){return s+v;},0);
   var gValsF   = gVals.filter(function(v){return v>0;});
   var gLabelsF = gLabels.filter(function(l,i){return gVals[i]>0;});
@@ -2373,7 +2401,7 @@ function aggiornaGrafici() {
   })();
 
   // ── Riepilogo testo ──
-  var giorni = records.filter(function(r){ return (r.ore_tot||0)>0||(r.malattia||0)>0||(r.ferie||0)>0; }).length;
+  var giorni = records.filter(function(r){ return (r.ore_tot||0)>0||(r.malattia||0)>0||(r.ferie||0)>0||(r.festivita||0)>0; }).length;
   document.getElementById('grafRiepilogo').innerHTML =
     '<div class="stats">'+
       '<div class="stat"><div class="stat-l">Giorni lav.</div><div class="stat-v">'+giorni+'</div></div>'+
@@ -2381,33 +2409,41 @@ function aggiornaGrafici() {
       '<div class="stat"><div class="stat-l">Straord.</div><div class="stat-v">'+totStra.toFixed(1)+'h</div></div>'+
       '<div class="stat"><div class="stat-l">KM tot.</div><div class="stat-v">'+totKm+'</div></div>'+
     '</div>'+
-    (totMal||totFer||totPer ?
+    (totMal||totFer||totFest||totPer ?
       '<div class="stats">'+
         (totMal ? '<div class="stat"><div class="stat-l">Malattia</div><div class="stat-v">'+totMal+'h</div></div>' : '')+
         (totFer ? '<div class="stat"><div class="stat-l">Ferie</div><div class="stat-v">'+totFer+'h</div></div>' : '')+
+        (totFest ? '<div class="stat"><div class="stat-l">Festività</div><div class="stat-v">'+totFest+'h</div></div>' : '')+
         (totPer ? '<div class="stat"><div class="stat-l">Permessi</div><div class="stat-v">'+totPer+'h</div></div>' : '')+
       '</div>' : '');
 
   // ── Busta e Preventivo nel periodo selezionato ──
   var c = cfg();
-  var cP2=0,cC2=0,nP2=0,nC2=0,eP2=0,eC2=0;
+  var eP2=0,eC2=0;
+  var rimItaliaTot = 0, esenteItaliaTot = 0, tassabileItaliaTot = 0, giorniConTrasfItalia2 = 0;
   records.forEach(function(r){
     var t = r.trasferte||{};
-    if(typeof t==='number'){ nP2+=t>0?1:0; return; }
-    if(t.clientePranzo) cP2++; if(t.clienteCena) cC2++;
-    if(t.nostroPranzo)  nP2++; if(t.nostroCena)  nC2++;
-    if(t.esteroPranzo)  eP2++; if(t.esteroCena)  eC2++;
+    if(typeof t==='number'){ return; } // vecchio formato, non gestibile a pacchetto: ignorato qui
+    if(t.esteroPranzo) eP2++; if(t.esteroCena) eC2++;
+    var giornoHaItalia = t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.pernottamento||t.mezzaTrasf;
+    if(giornoHaItalia) {
+      var fisco = calcolaFiscoGiornoItalia(t, c);
+      rimItaliaTot += fisco.esente + fisco.tassabile;
+      esenteItaliaTot += fisco.esente;
+      tassabileItaliaTot += fisco.tassabile;
+      giorniConTrasfItalia2++;
+    }
   });
-  var rimTot  = cP2*(c.rimborso_cliente_pranzo||0)+cC2*(c.rimborso_cliente_cena||0)+
-                nP2*(c.rimborso_nostro_pranzo||0) +nC2*(c.rimborso_nostro_cena||0)+
-                eP2*(c.rimborso_estero_pranzo||0) +eC2*(c.rimborso_estero_cena||0);
-  var giorniConTrasf = records.filter(function(r){
-    var t=r.trasferte; if(!t) return false;
-    if(typeof t==='number') return t>0;
-    return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena||t.mezzaTrasf;
+  var rimEst2 = eP2*(c.rimborso_estero_pranzo||0) + eC2*(c.rimborso_estero_cena||0);
+  var rimTot  = rimItaliaTot + rimEst2;
+  var giorniConTrasf = giorniConTrasfItalia2 + records.filter(function(r){
+    var t=r.trasferte; if(!t || typeof t==='number') return false;
+    return (t.esteroPranzo||t.esteroCena) && !(t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.pernottamento||t.mezzaTrasf);
   }).length;
   var tetto  = c.tetto_trasferte || 40;
-  var esenteTot = giorniConTrasf>0 ? Math.min(rimTot/giorniConTrasf, tetto)*giorniConTrasf : 0;
+  // Italia già tassata correttamente a pacchetto; Estero ancora a tetto piatto configurabile
+  var esenteEst2 = giorniConTrasfItalia2 < giorniConTrasf ? Math.min(rimEst2/(giorniConTrasf-giorniConTrasfItalia2||1), tetto)*(giorniConTrasf-giorniConTrasfItalia2) : 0;
+  var esenteTot = esenteItaliaTot + esenteEst2;
   var tassabileTot = Math.max(0, rimTot - esenteTot);
   var totAssOre = totMal + totFer;
   // NOTA: qui isMese non è ancora calcolato (viene dopo) — lo anticipiamo per decidere
@@ -2443,7 +2479,7 @@ function aggiornaGrafici() {
   var addizTotC = addizRegC + addizComC; // trattenute mensili fisse
   var netto   = lordo - inps - irpef - addizTotC + esenteTot;
   var spese   = records.reduce(function(s,r){return s+(r.spesa_pranzo||0)+(r.spesa_cena||0);},0);
-  var giorniGia = records.filter(function(r){return (r.ore_tot||0)>0||(r.malattia||0)>0||(r.ferie||0)>0;}).length;
+  var giorniGia = records.filter(function(r){return (r.ore_tot||0)>0||(r.malattia||0)>0||(r.ferie||0)>0||(r.festivita||0)>0;}).length;
 
   // Festivi per il preventivo
   var FEST=['01-01','01-06','04-25','05-01','06-02','08-15','11-01','12-08','12-25','12-26'];
@@ -2609,7 +2645,7 @@ function cercaClienti() {
   d.forEach(function(r, i) {
     if(!r.manuale) return;
     var cl = (r.cliente || '').trim();
-    if(!cl || cl === 'Ferie' || cl === 'Malattia') return;
+    if(!cl || cl === 'Ferie' || cl === 'Malattia' || cl === 'Festività') return;
     if(q && cl.toLowerCase().indexOf(q) === -1) return;
     var key = cl.toLowerCase(); // raggruppa senza distinzione maiuscole
     if(!mappa[key]) mappa[key] = { nome: cl, giorni: 0, ore: 0, km: 0, stra: 0 };
@@ -3032,7 +3068,7 @@ function rimuoviPin() {
     d.forEach(function(r){
       if(!r.manuale) {
         var haCliente = r.cliente && r.cliente.trim() !== '';
-        var haAssenza = (r.malattia||0)>0 || (r.ferie||0)>0 || (r.permessi||0)>0;
+        var haAssenza = (r.malattia||0)>0 || (r.ferie||0)>0 || (r.festivita||0)>0 || (r.permessi||0)>0;
         var haExtra   = (r.km||0)>0 || (r.codici||'').trim()!=='' || (r.note||'').trim()!=='';
         if(haCliente || haAssenza || haExtra) {
           r.manuale = true; aggiornati = true;
@@ -3048,7 +3084,107 @@ function rimuoviPin() {
   setVal('bustaMese', fmtMese(new Date()));
   try { aggiornaHome(); } catch(e) { console.error('init error:', e); }
   var cvEl = document.getElementById('creditsVersione'); if(cvEl) cvEl.textContent = APP_VERSION;
+  // Ritardo per assicurare che il layout della Home sia stabile prima di misurare le card
+  // (necessario soprattutto per PWA installate che caricano la pagina molto rapidamente da cache)
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      try { assemblaHome(); } catch(e) { console.error('assembly error:', e); }
+    });
+  });
 })();
+
+// Riprova l'assemblaggio quando l'app torna in foreground senza un vero reload del
+// documento (es. Android che "iberna" la WebView invece di distruggerla allo swipe-away,
+// o iOS che ripristina la pagina dalla cache di navigazione bfcache). In questi casi
+// l'evento 'load' iniziale non si ripete, ma 'pageshow' con persisted=true sì.
+window.addEventListener('pageshow', function(ev){
+  if(ev.persisted && document.getElementById('scrHome') && document.getElementById('scrHome').classList.contains('on')) {
+    assemblaHome._retried = false;
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        try { assemblaHome(); } catch(e) { console.error('assembly error:', e); }
+      });
+    });
+  }
+});
+
+// ── Assemblaggio frammenti Home: solo al primo avvio, effetto "puzzle" leggero ──
+function assemblaHome() {
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var cardsWrap = document.querySelector('#scrHome .cards');
+  if(!cardsWrap) return;
+  var cards = Array.prototype.slice.call(cardsWrap.querySelectorAll(':scope > .card'));
+  if(!cards.length) return;
+
+  // Difesa: se il layout non è ancora stabile (card senza dimensioni reali), riprova
+  // una volta sola dopo un breve ritardo invece di procedere con frammenti invisibili.
+  var testRect = cards[0].getBoundingClientRect();
+  if((testRect.width === 0 || testRect.height === 0) && !assemblaHome._retried) {
+    assemblaHome._retried = true;
+    setTimeout(assemblaHome, 150);
+    return;
+  }
+
+  var GRID_COLS = 3, GRID_ROWS = 2;
+  var holders = cards.map(function(card, cardIndex) {
+    var rect = card.getBoundingClientRect();
+    var w = rect.width, h = rect.height;
+    var cellW = w / GRID_COLS, cellH = h / GRID_ROWS;
+
+    var holder = document.createElement('div');
+    holder.className = 'frag-holder';
+    holder.style.height = h + 'px';
+
+    for(var r = 0; r < GRID_ROWS; r++) {
+      for(var c = 0; c < GRID_COLS; c++) {
+        var frag = document.createElement('div');
+        frag.className = 'frag';
+        frag.style.width = cellW + 'px';
+        frag.style.height = cellH + 'px';
+        frag.style.left = (c * cellW) + 'px';
+        frag.style.top = (r * cellH) + 'px';
+
+        var clone = card.cloneNode(true);
+        clone.style.left = (-c * cellW) + 'px';
+        clone.style.top = (-r * cellH) + 'px';
+        clone.style.width = w + 'px';
+        clone.style.height = h + 'px';
+        frag.appendChild(clone);
+
+        var angle = Math.random() * Math.PI * 2;
+        var dist = 30 + Math.random() * 50;
+        var dx = Math.cos(angle) * dist;
+        var dy = Math.sin(angle) * dist;
+        var rot = (Math.random() - 0.5) * 30;
+        var cellDelay = (r * GRID_COLS + c) * 10;
+
+        frag.style.setProperty('--dx', dx + 'px');
+        frag.style.setProperty('--dy', dy + 'px');
+        frag.style.setProperty('--rot', rot + 'deg');
+        frag.style.setProperty('--delay', (cardIndex * 70 + cellDelay) + 'ms');
+
+        holder.appendChild(frag);
+      }
+    }
+    return holder;
+  });
+
+  // Sostituisce le card reali con i loro holder frammentati
+  cards.forEach(function(card, i) { cardsWrap.replaceChild(holders[i], card); });
+
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      document.querySelectorAll('#scrHome .frag').forEach(function(f){ f.classList.add('play'); });
+      // Ripristina le card reali (interattive) dopo la fine dell'animazione più lunga
+      var maxDelay = (cards.length - 1) * 70 + (GRID_ROWS*GRID_COLS - 1) * 10 + 360 + 60;
+      setTimeout(function(){
+        holders.forEach(function(holder, i) {
+          if(holder.parentNode) cardsWrap.replaceChild(cards[i], holder);
+        });
+      }, maxDelay);
+    });
+  });
+}
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
