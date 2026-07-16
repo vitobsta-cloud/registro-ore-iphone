@@ -788,7 +788,7 @@ tr:hover td{background:#fafaf8;}
 <div id="toast"></div>
 
 <script>
-var APP_VERSION = 'v26';
+var APP_VERSION = 'v28';
 var DB_KEY  = 'rl_db_v3';
 var CFG_KEY = 'rl_cfg_v3';
 var MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
@@ -3172,16 +3172,23 @@ function assemblaHome() {
   // Sostituisce le card reali con i loro holder frammentati
   cards.forEach(function(card, i) { cardsWrap.replaceChild(holders[i], card); });
 
+  // Pausa iniziale: i frammenti restano fermi nella posizione sparsa per un attimo,
+  // così l'occhio registra la scena prima che parta il movimento (altrimenti, se il
+  // dispositivo è veloce, l'animazione rischia di risultare quasi impercettibile).
+  var INITIAL_PAUSE = 350;
+
   requestAnimationFrame(function(){
     requestAnimationFrame(function(){
-      document.querySelectorAll('#scrHome .frag').forEach(function(f){ f.classList.add('play'); });
-      // Ripristina le card reali (interattive) dopo la fine dell'animazione più lunga
-      var maxDelay = (cards.length - 1) * 70 + (GRID_ROWS*GRID_COLS - 1) * 10 + 360 + 60;
       setTimeout(function(){
-        holders.forEach(function(holder, i) {
-          if(holder.parentNode) cardsWrap.replaceChild(cards[i], holder);
-        });
-      }, maxDelay);
+        document.querySelectorAll('#scrHome .frag').forEach(function(f){ f.classList.add('play'); });
+        // Ripristina le card reali (interattive) dopo la fine dell'animazione più lunga
+        var maxDelay = (cards.length - 1) * 70 + (GRID_ROWS*GRID_COLS - 1) * 10 + 360 + 60;
+        setTimeout(function(){
+          holders.forEach(function(holder, i) {
+            if(holder.parentNode) cardsWrap.replaceChild(cards[i], holder);
+          });
+        }, maxDelay);
+      }, INITIAL_PAUSE);
     });
   });
 }
@@ -3196,6 +3203,19 @@ if ('serviceWorker' in navigator) {
     }).catch(function(error) {
       console.log('✗ Errore nella registrazione del Service Worker:', error);
     });
+  });
+
+  // Quando un nuovo service worker (nuova versione dell'app) prende il controllo,
+  // la pagina già aperta resta "agganciata" a quello vecchio finché non viene
+  // ricaricata: questo forza il reload appena il nuovo SW diventa attivo, così anche
+  // riaprendo l'app senza un vero riavvio del processo (es. dopo swipe-away su Android,
+  // dove Android spesso mantiene la WebView viva invece di distruggerla) si vede
+  // sempre l'ultima versione installata, non quella residua in cache.
+  var swReloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function() {
+    if (swReloading) return;
+    swReloading = true;
+    window.location.reload();
   });
 }
 </script>
