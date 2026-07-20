@@ -264,7 +264,7 @@ tr:hover td{background:#fafaf8;}
     <div class="ph"><h2>Nuova giornata</h2></div>
     <div class="pb">
       <div class="row2">
-        <div class="fg"><label>Data</label><input type="date" id="fData"></div>
+        <div class="fg"><label>Data</label><input type="date" id="fData" onchange="autoCalc()"></div>
         <div class="fg"><label>Cliente</label><input type="text" id="fCliente" placeholder="Nome cliente" oninput="onClienteInput()"></div>
       </div>
 
@@ -681,8 +681,9 @@ tr:hover td{background:#fafaf8;}
     <div class="pb">
       <div class="set-row"><div class="set-info"><h3>Ore ordinarie/giorno</h3><p>Soglia per gli straordinari</p></div><input type="number" id="setOreStd" step="0.5" min="1" max="24"></div>
       <div class="set-row"><div class="set-info"><h3>Ordinario fisso CCNL (ore/mese)</h3><p>Voce 8001 in busta — fisso, non dipende dalle ore registrate</p></div><input type="number" id="setOreFisso" step="1" min="0" max="300"></div>
-      <div class="set-row"><div class="set-info"><h3>Paga €/ora ordinaria</h3><p>Tariffa oraria base</p></div><input type="number" id="setPaga" step="0.01" min="0"></div>
-      <div class="set-row"><div class="set-info"><h3>Paga €/ora straordinaria</h3><p>Maggiore della paga base</p></div><input type="number" id="setPagaStra" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Paga €/ora ordinaria</h3><p>Tariffa oraria base</p></div><input type="number" id="setPaga" step="0.01" min="0" oninput="autoCalcStra()"></div>
+      <div class="set-row"><div class="set-info"><h3>Paga €/ora straordinaria (feriale, +30%)</h3><p id="setPagaStraInfo">Lun–Ven, ore oltre la soglia giornaliera — calcolata automaticamente</p></div><input type="number" id="setPagaStra" step="0.01" min="0" onchange="setPagaStra.dataset.manuale='1'; document.getElementById('setPagaStraInfo').textContent='Lun–Ven, ore oltre la soglia giornaliera';"></div>
+      <div class="set-row"><div class="set-info"><h3>Paga €/ora straordinaria (Sab/Dom, +50%)</h3><p id="setPagaStraWeekendInfo">Sabato e Domenica — tutte le ore lavorate — calcolata automaticamente</p></div><input type="number" id="setPagaStraWeekend" step="0.01" min="0" onchange="setPagaStraWeekend.dataset.manuale='1'; document.getElementById('setPagaStraWeekendInfo').textContent='Sabato e Domenica — tutte le ore lavorate';"></div>
       <div class="set-row"><div class="set-info"><h3>Trattenuta INPS %</h3><p>Percentuale contributi</p></div><input type="number" id="setInps" step="0.01" min="0" max="100"></div>
       <div class="set-row"><div class="set-info"><h3>Trattenuta IRPEF %</h3><p>Percentuale imposta</p></div><input type="number" id="setIrpef" step="0.01" min="0" max="100"></div>
       <div class="set-row"><div class="set-info"><h3>Add. regionale (€)</h3><p>Rata mensile, dalla busta</p></div><input type="number" id="setAddizReg" step="0.01" min="0"></div>
@@ -788,7 +789,7 @@ tr:hover td{background:#fafaf8;}
 <div id="toast"></div>
 
 <script>
-var APP_VERSION = 'v28';
+var APP_VERSION = 'v30';
 var DB_KEY  = 'rl_db_v3';
 var CFG_KEY = 'rl_cfg_v3';
 var MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
@@ -807,7 +808,7 @@ function fmtMese(d) {
 function db() { try { var d = localStorage.getItem(DB_KEY); return d ? JSON.parse(d) : []; } catch(e) { return []; } }
 function saveDb(d) { localStorage.setItem(DB_KEY, JSON.stringify(d)); }
 function cfg() {
-  var def = { ore_std:8, paga:10, paga_stra:12, inps:9.19, irpef:23,
+  var def = { ore_std:8, paga:10, paga_stra:12, paga_stra_weekend:15, inps:9.19, irpef:23,
     ordinario_fisso_ore:173,
     rimborso_cliente_pranzo:25, rimborso_cliente_cena:30,
     rimborso_nostro_pranzo:25, rimborso_nostro_cena:30,
@@ -974,6 +975,27 @@ function sogliaEsenzioneGiornoItalia(t) {
   // Mezza trasferta (11€, no pasto no pernott.): interamente esente, come "no pasto" da tabella
   return soglia;
 }
+// È sabato o domenica? Usa il pattern data+T12:00:00 già in uso altrove nel file
+// per evitare problemi di fuso orario sul cambio giorno.
+function isWeekend(dataStr) {
+  if(!dataStr) return false;
+  var d = new Date(dataStr + 'T12:00:00');
+  var dow = d.getDay();
+  return dow === 0 || dow === 6;
+}
+// Suddivide le ore straordinario di un insieme di record in feriale (30%) e weekend (50%).
+// Sab/Dom: TUTTE le ore lavorate quel giorno sono straordinario al 50% (non esiste
+// ordinario nel weekend). Lun-Ven: lo straordinario resta quello oltre la soglia
+// giornaliera, alla maggiorazione feriale (30%).
+function splitStraordinario(records) {
+  var feriale = 0, weekend = 0;
+  records.forEach(function(r){
+    var oreGiorno = isWeekend(r.data) ? (r.ore_tot || 0) : (r.ore_stra || 0);
+    if(isWeekend(r.data)) weekend += oreGiorno;
+    else feriale += oreGiorno;
+  });
+  return { feriale: feriale, weekend: weekend };
+}
 // Calcola esente/tassabile di UNA giornata: se il pacchetto non ha soglia, tutto esente.
 // Se ha soglia, esente = min(lordo, soglia), tassabile = eccedenza.
 function calcolaFiscoGiornoItalia(t, cf) {
@@ -1129,11 +1151,17 @@ function autoCalc() {
   var tot=(ma-md)+(pa-pd);
   var prev=document.getElementById('prevCalc');
   if(tot>0){
-    var std=cfg().ore_std, ord=Math.min(tot,std), stra=Math.max(0,tot-std);
+    var dataVal = document.getElementById('fData').value;
+    var weekend = isWeekend(dataVal);
+    var std=cfg().ore_std;
+    var ord = weekend ? 0 : Math.min(tot,std);
+    var stra = weekend ? tot : Math.max(0,tot-std);
     document.getElementById('fOrd').value=ord.toFixed(1);
     document.getElementById('fStra').value=stra.toFixed(1);
     prev.style.display='block';
-    prev.textContent='Totale: '+tot.toFixed(1)+'h → Ordinarie: '+ord.toFixed(1)+'h   Straordinarie: '+stra.toFixed(1)+'h';
+    prev.textContent = weekend
+      ? 'Totale: '+tot.toFixed(1)+'h → Sabato/Domenica: tutto straordinario al 50% ('+stra.toFixed(1)+'h)'
+      : 'Totale: '+tot.toFixed(1)+'h → Ordinarie: '+ord.toFixed(1)+'h   Straordinarie: '+stra.toFixed(1)+'h';
   } else { prev.style.display='none'; }
 }
 
@@ -1521,7 +1549,7 @@ function calcolaBusta() {
   var records = db().filter(function(r){ return r.manuale && r.data && r.data.startsWith(mese); });
   var cf = cfg();
 
-  var totOrd=0, totStra=0, totAssenze=0, totPermessi=0, totFestivita=0, spP=0, spC=0;
+  var totOrd=0, totStra=0, totStraWeekend=0, totAssenze=0, totPermessi=0, totFestivita=0, spP=0, spC=0;
   var cP=0, cC=0, nP=0, nC=0, eP=0, eC=0;
   var giorniLav=0;
 
@@ -1530,7 +1558,10 @@ function calcolaBusta() {
     if(oreTot > 0) giorniLav++;
 
     totOrd  += r.ore_ord  || 0;
-    totStra += r.ore_stra || 0;
+    // Straordinario: feriale (30%) resta ore_stra; sab/dom (50%) sono TUTTE le ore
+    // lavorate quel giorno, non solo quelle oltre soglia (non esiste ordinario nel weekend).
+    if(isWeekend(r.data)) totStraWeekend += oreTot;
+    else totStra += r.ore_stra || 0;
     totAssenze += (r.malattia||0) + (r.ferie||0);
     totPermessi+= r.permessi || 0;
     totFestivita+= r.festivita || 0;
@@ -1599,8 +1630,9 @@ function calcolaBusta() {
   var oreFisso = cf.ordinario_fisso_ore || 173;
   var impOrd  = oreFisso    * (cf.paga      || 0);
   var impStra = totStra     * (cf.paga_stra || 0);
+  var impStraWeekend = totStraWeekend * (cf.paga_stra_weekend || 0);
   // Il lordo include le trasferte tassabili (le esenti non concorrono al reddito)
-  var lordo   = impOrd + impStra + totTassabile;
+  var lordo   = impOrd + impStra + impStraWeekend + totTassabile;
   var inps    = lordo * ((cf.inps  || 0) / 100);
   var irpef   = (lordo - inps) * ((cf.irpef || 0) / 100);
   var addizReg = cf.addiz_regionale || 0;
@@ -1646,6 +1678,7 @@ function calcolaBusta() {
     '<div class="stats" style="margin-bottom:8px">' +
       '<div class="stat"><div class="stat-l">Ore ord.</div><div class="stat-v">' + totOrd.toFixed(1) + 'h</div></div>' +
       '<div class="stat"><div class="stat-l">Straord.</div><div class="stat-v">' + totStra.toFixed(1) + 'h</div><div class="stat-s">' + impStra.toFixed(2) + ' €</div></div>' +
+      (totStraWeekend > 0 ? '<div class="stat"><div class="stat-l">Straord. Sab/Dom</div><div class="stat-v">' + totStraWeekend.toFixed(1) + 'h</div><div class="stat-s">' + impStraWeekend.toFixed(2) + ' €</div></div>' : '') +
       (totAssenze > 0 ? '<div class="stat"><div class="stat-l">Malattia+Ferie</div><div class="stat-v">' + totAssenze.toFixed(0) + 'h</div></div>' : '') +
       (totFestivita > 0 ? '<div class="stat"><div class="stat-l">Festività</div><div class="stat-v">' + totFestivita.toFixed(1) + 'h</div></div>' : '') +
       (totPermessi > 0 ? '<div class="stat"><div class="stat-l">Permessi</div><div class="stat-v">' + totPermessi.toFixed(1) + 'h</div></div>' : '') +
@@ -1674,7 +1707,8 @@ function calcolaBusta() {
 
     '<div class="sec-lbl">Calcolo stipendio</div>' +
     '<div class="res-row"><span>Ordinario fisso CCNL (' + oreFisso.toFixed(0) + 'h × ' + (cf.paga||0).toFixed(2) + ' €)</span><span>' + impOrd.toFixed(2) + ' €</span></div>' +
-    (totStra > 0 ? '<div class="res-row"><span>Straordinari (' + totStra.toFixed(1) + 'h × ' + (cf.paga_stra||0).toFixed(2) + ' €)</span><span>' + impStra.toFixed(2) + ' €</span></div>' : '') +
+    (totStra > 0 ? '<div class="res-row"><span>Straordinari feriali (' + totStra.toFixed(1) + 'h × ' + (cf.paga_stra||0).toFixed(2) + ' €)</span><span>' + impStra.toFixed(2) + ' €</span></div>' : '') +
+    (totStraWeekend > 0 ? '<div class="res-row"><span>Straordinari Sab/Dom (' + totStraWeekend.toFixed(1) + 'h × ' + (cf.paga_stra_weekend||0).toFixed(2) + ' €)</span><span>' + impStraWeekend.toFixed(2) + ' €</span></div>' : '') +
     (nTrasf > 0 ? '<div class="res-row"><span>Rimborsi trasferte</span><span>' + totTrasf.toFixed(2) + ' €</span></div>' : '') +
     '<div class="res-row" style="border-top:1.5px solid #e0e0e0;margin-top:6px;padding-top:10px"><span><b>Totale Lordo</b></span><span><b>' + lordo.toFixed(2) + ' €</b></span></div>' +
     '<div class="res-row"><span>INPS (' + (cf.inps||0) + '%)</span><span style="color:#a32d2d">− ' + inps.toFixed(2) + ' €</span></div>' +
@@ -1808,7 +1842,9 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
     var impOrdMancanti = 0; // il fisso CCNL copre già l'intero mese
 
     var impOrdGia2  = oreFissoM  * (cf.paga      || 0);
-    var impStraGia2 = oreStraGia * (cf.paga_stra || 0);
+    var straSplit2  = splitStraordinario(records);
+    var impStraGia2 = straSplit2.feriale * (cf.paga_stra || 0);
+    var impStraWeekendGia2 = straSplit2.weekend * (cf.paga_stra_weekend || 0);
     // Trasferte: sistema a pacchetto per giornata (stesso calcolo di calcolaBusta),
     // NON somma lineare pranzo+cena.
     var rimGiaTot = 0, esente2 = 0, tassabile2 = 0, giorniConTrasf2 = 0;
@@ -1825,7 +1861,7 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
         }
       }
     });
-    var lordoGia2  = impOrdGia2 + impStraGia2 + tassabile2;
+    var lordoGia2  = impOrdGia2 + impStraGia2 + impStraWeekendGia2 + tassabile2;
     var inpsGia2   = lordoGia2 * ((cf.inps||0)/100);
     var irpefGia2  = (lordoGia2 - inpsGia2) * ((cf.irpef||0)/100);
     var nettoGia2  = lordoGia2 - inpsGia2 - irpefGia2 + esente2;
@@ -1900,7 +1936,9 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
   // Ricalcola consuntivo CON tetto fiscale (uguale a calcolaBusta)
   // L'ordinario è il fisso CCNL: non dipende da ore già inserite né da ore rimanenti.
   var impOrdGia2  = oreFissoCorr * (cf.paga      || 0);
-  var impStraGia2 = oreStraGia   * (cf.paga_stra || 0);
+  var straSplitCorr = splitStraordinario(records);
+  var impStraGia2 = straSplitCorr.feriale * (cf.paga_stra || 0);
+  var impStraWeekendGia = straSplitCorr.weekend * (cf.paga_stra_weekend || 0);
   // Trasferte: sistema a pacchetto per giornata (stesso calcolo di calcolaBusta),
   // NON somma lineare pranzo+cena.
   var rimGiaTot = 0, esenteGia = 0, tassabileGia = 0, giorniConTrasfGia = 0;
@@ -1917,7 +1955,7 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
       }
     }
   });
-  var lordoGia     = impOrdGia2 + impStraGia2 + tassabileGia;
+  var lordoGia     = impOrdGia2 + impStraGia2 + impStraWeekendGia + tassabileGia;
   var inpsGia      = lordoGia * ((cf.inps||0)/100);
   var irpefGia     = (lordoGia - inpsGia) * ((cf.irpef||0)/100);
   var nettoGia     = lordoGia - inpsGia - irpefGia + esenteGia;
@@ -1928,7 +1966,7 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
   var tassabileRim = 0;
 
   // TOTALE FINE MESE = il fisso CCNL è già completo di suo, quindi coincide col consuntivo
-  var lordoTotBase = impOrdGia2 + impStraGia2 + tassabileGia + tassabileRim;
+  var lordoTotBase = impOrdGia2 + impStraGia2 + impStraWeekendGia + tassabileGia + tassabileRim;
   var esenteTot    = esenteGia + esenteRim;
   var inpsTot      = lordoTotBase * ((cf.inps||0)/100);
   var irpefTot     = (lordoTotBase - inpsTot) * ((cf.irpef||0)/100);
@@ -1993,6 +2031,19 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
 }
 
 // ── IMPOSTAZIONI ──
+// Calcola automaticamente le tariffe straordinario (feriale +30%, weekend +50%) a
+// partire dalla paga oraria base, quando questa viene modificata in Impostazioni.
+// Se l'utente ha già toccato manualmente uno dei due campi in questa sessione di
+// modifica (dataset.manuale), quel campo non viene più sovrascritto automaticamente.
+function autoCalcStra() {
+  var pagaEl = document.getElementById('setPaga');
+  var straEl = document.getElementById('setPagaStra');
+  var straWEl = document.getElementById('setPagaStraWeekend');
+  var paga = parseFloat(pagaEl.value) || 0;
+  if(!straEl.dataset.manuale) straEl.value = (paga * 1.30).toFixed(2);
+  if(!straWEl.dataset.manuale) straWEl.value = (paga * 1.50).toFixed(2);
+}
+
 function initImpostazioni() {
   var c=cfg();
   document.getElementById('setOreStd').value=c.ore_std;
@@ -2000,6 +2051,11 @@ function initImpostazioni() {
   var tEl=document.getElementById('setTettoTrasf'); if(tEl) tEl.value=c.tetto_trasferte||40;
   document.getElementById('setPaga').value=c.paga;
   document.getElementById('setPagaStra').value=c.paga_stra;
+  document.getElementById('setPagaStraWeekend').value=c.paga_stra_weekend;
+  delete document.getElementById('setPagaStra').dataset.manuale;
+  delete document.getElementById('setPagaStraWeekend').dataset.manuale;
+  var pInfo1=document.getElementById('setPagaStraInfo'); if(pInfo1) pInfo1.textContent='Lun–Ven, ore oltre la soglia giornaliera — calcolata automaticamente';
+  var pInfo2=document.getElementById('setPagaStraWeekendInfo'); if(pInfo2) pInfo2.textContent='Sabato e Domenica — tutte le ore lavorate — calcolata automaticamente';
   document.getElementById('setInps').value=c.inps;
   document.getElementById('setIrpef').value=c.irpef;
   var arEl=document.getElementById('setAddizReg'); if(arEl) arEl.value=c.addiz_regionale||0;
@@ -2028,6 +2084,7 @@ function salvaImpostazioni() {
     ordinario_fisso_ore: parseFloat(document.getElementById('setOreFisso').value)||173,
     paga:    parseFloat(document.getElementById('setPaga').value)||0,
     paga_stra: parseFloat(document.getElementById('setPagaStra').value)||0,
+    paga_stra_weekend: parseFloat(document.getElementById('setPagaStraWeekend').value)||0,
     inps:    parseFloat(document.getElementById('setInps').value)||0,
     irpef:   parseFloat(document.getElementById('setIrpef').value)||0,
     addiz_regionale: parseFloat(document.getElementById('setAddizReg').value)||0,
@@ -2460,6 +2517,7 @@ function aggiornaGrafici() {
     }
   }
   var impOrd, impAss;
+  var straSplitG = splitStraordinario(records);
   if(isMeseAnticipato) {
     // Mese intero selezionato: ordinario = fisso CCNL, assenze/permessi già ricomprese nel fisso
     impOrd = (c.ordinario_fisso_ore||173) * (c.paga||0);
@@ -2470,8 +2528,9 @@ function aggiornaGrafici() {
     impOrd = totOrd * (c.paga||0);
     impAss = totAssOre * (c.paga||0);
   }
-  var impStra = totStra * (c.paga_stra||0);
-  var lordo   = impOrd + impStra + impAss + tassabileTot;
+  var impStra = straSplitG.feriale * (c.paga_stra||0);
+  var impStraWeekend = straSplitG.weekend * (c.paga_stra_weekend||0);
+  var lordo   = impOrd + impStra + impStraWeekend + impAss + tassabileTot;
   var inps    = lordo * ((c.inps||0)/100);
   var irpef   = (lordo-inps) * ((c.irpef||0)/100);
   var addizRegC = c.addiz_regionale || 0;
@@ -2518,7 +2577,8 @@ function aggiornaGrafici() {
   var htmlBusta =
     '<div class="stats" style="margin-bottom:14px">'+
       '<div class="stat"><div class="stat-l">Ore ord.</div><div class="stat-v">'+totOrd.toFixed(1)+'h</div><div class="stat-s">'+impOrd.toFixed(2)+' €</div></div>'+
-      (totStra?'<div class="stat"><div class="stat-l">Straord.</div><div class="stat-v">'+totStra.toFixed(1)+'h</div><div class="stat-s">'+impStra.toFixed(2)+' €</div></div>':'')+
+      (straSplitG.feriale?'<div class="stat"><div class="stat-l">Straord. fer.</div><div class="stat-v">'+straSplitG.feriale.toFixed(1)+'h</div><div class="stat-s">'+impStra.toFixed(2)+' €</div></div>':'')+
+      (straSplitG.weekend?'<div class="stat"><div class="stat-l">Straord. Sab/Dom</div><div class="stat-v">'+straSplitG.weekend.toFixed(1)+'h</div><div class="stat-s">'+impStraWeekend.toFixed(2)+' €</div></div>':'')+
       (rimTot?'<div class="stat"><div class="stat-l">Trasferte</div><div class="stat-v">'+rimTot.toFixed(2)+' €</div></div>':'')+
     '</div>'+
     '<div class="res-row"><span>Totale Lordo</span><span><b>'+lordo.toFixed(2)+' €</b></span></div>'+
@@ -2780,11 +2840,17 @@ function autoCalcMod() {
   var tot=(ma-md)+(pa-pd);
   var prev=document.getElementById('mPrevCalc');
   if(tot>0){
-    var std=cfg().ore_std, ord=Math.min(tot,std), stra=Math.max(0,tot-std);
+    var dataVal = document.getElementById('mData').value;
+    var weekend = isWeekend(dataVal);
+    var std=cfg().ore_std;
+    var ord = weekend ? 0 : Math.min(tot,std);
+    var stra = weekend ? tot : Math.max(0,tot-std);
     document.getElementById('mOrd').value=ord.toFixed(1);
     document.getElementById('mStra').value=stra.toFixed(1);
     prev.style.display='block';
-    prev.textContent='Totale: '+tot.toFixed(1)+'h → Ordinarie: '+ord.toFixed(1)+'h   Straordinarie: '+stra.toFixed(1)+'h';
+    prev.textContent = weekend
+      ? 'Totale: '+tot.toFixed(1)+'h → Sabato/Domenica: tutto straordinario al 50% ('+stra.toFixed(1)+'h)'
+      : 'Totale: '+tot.toFixed(1)+'h → Ordinarie: '+ord.toFixed(1)+'h   Straordinarie: '+stra.toFixed(1)+'h';
   } else { prev.style.display='none'; }
 }
 
