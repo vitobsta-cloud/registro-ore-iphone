@@ -200,7 +200,7 @@ tr:hover td{background:#fafaf8;}
 </head>
 <body>
 
-<div class="credits">TR/software <span id="creditsVersione" style="opacity:.6"></span></div>
+<div class="credits" onclick="showAbout()" style="cursor:pointer">TR/software <span id="creditsVersione" style="opacity:.6"></span></div>
 
 <div class="hdr">
   <button class="hdr-back" id="btnBack" onclick="goHome()">&#8592; Home</button>
@@ -786,6 +786,7 @@ tr:hover td{background:#fafaf8;}
       <p id="infoVersione" style="color:#888;"></p>
       <p>I dati sono salvati nel browser (localStorage).</p>
       <p>Esporta regolarmente il JSON come backup.</p>
+      <button class="btn btn-s" onclick="showAbout()" style="margin-top:8px">ℹ️ Cronologia versioni</button>
     </div>
   </div>
 </div>
@@ -793,7 +794,7 @@ tr:hover td{background:#fafaf8;}
 <div id="toast"></div>
 
 <script>
-var APP_VERSION = 'v32';
+var APP_VERSION = 'v33';
 var DB_KEY  = 'rl_db_v3';
 var CFG_KEY = 'rl_cfg_v3';
 var MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
@@ -2034,6 +2035,52 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
         '<div class="res-row" style="border:none"><span style="color:#f5f4f0"><b>Netto − Spese</b></span><span style="color:#f5f4f0"><b>' + (nettoTot - speseTotal).toFixed(2) + ' €</b></span></div>' +
       '</div>'
     : '');
+}
+
+// ── INFO / CRONOLOGIA VERSIONI ──
+function showAbout() {
+  var box = document.getElementById('aboutBox');
+  box.innerHTML =
+    '<div class="about-header">' +
+      '<div class="about-logo">📋</div>' +
+      '<div><div class="about-title">Registro Lavoro</div>' +
+      '<div class="about-sub">' + APP_VERSION + ' — TR/software</div></div>' +
+    '</div>' +
+    '<div class="about-dev">Sviluppato da TR/software. PWA per la gestione ore, trasferte e busta paga.</div>' +
+
+    '<div class="about-section"><div class="about-ver">v33 <span class="about-date">luglio 2026</span></div>' +
+    '<div class="about-changes">Aggiunta schermata Info / Cronologia versioni.<br>Accessibile dal badge TR/software e da Impostazioni.</div></div>' +
+
+    '<div class="about-section"><div class="about-ver">v32 <span class="about-date">luglio 2026</span></div>' +
+    '<div class="about-changes">Preventivo ristrutturato (netto minimo garantito, niente stime).<br>Pulsante "Indietro" universale in Modifica (Visualizza, Clienti, Codici).<br>Fix ritorno al dettaglio cliente specifico dopo modifica.</div></div>' +
+
+    '<div class="about-section"><div class="about-ver">v29–v31 <span class="about-date">luglio 2026</span></div>' +
+    '<div class="about-changes">Straordinario weekend (Sab/Dom) al 50% separato dal feriale 30%.<br>Nuovo campo Impostazioni: Paga ora Sab/Dom.<br>Auto-calcolo tariffe straordinario dalla paga base.<br>Form rileva weekend e imposta 0h ordinarie.<br>Fix addizionali mancanti nel Preventivo.</div></div>' +
+
+    '<div class="about-section"><div class="about-ver">v28 <span class="about-date">luglio 2026</span></div>' +
+    '<div class="about-changes">Animazione assemblaggio frammenti all\'avvio della Home.<br>Pausa iniziale per percettibilità su dispositivi veloci.</div></div>' +
+
+    '<div class="about-section"><div class="about-ver">v27 <span class="about-date">luglio 2026</span></div>' +
+    '<div class="about-changes">Fix aggiornamento service worker: reload automatico alla nuova versione.<br>Risolto "versione vecchia dopo swipe-away su Android".</div></div>' +
+
+    '<div class="about-section"><div class="about-ver">v23–v26 <span class="about-date">luglio 2026</span></div>' +
+    '<div class="about-changes">Review completa del codice (79 funzioni).<br>Fix trasferte: Riepilogo e Grafici ora usano il sistema a pacchetto.<br>Campo Festività aggiunto a 8 punti mancanti.<br>Fix Festività come cliente finto nella ricerca.<br>Animazione Home integrata nell\'app.</div></div>' +
+
+    '<div class="about-section"><div class="about-ver">v20–v22 <span class="about-date">luglio 2026</span></div>' +
+    '<div class="about-changes">Colonna Spese nella tabella Visualizza.<br>Fix mutua esclusione Pernottamento / Mezza trasferta / Pasti.<br>Icone ingrandite nella lista.</div></div>' +
+
+    '<div class="about-section"><div class="about-ver">v19 <span class="about-date">luglio 2026</span></div>' +
+    '<div class="about-changes">Ordinario fisso CCNL 173h/mese (verificato su 4 cedolini).<br>Campo Festività godute in Inserimento e Modifica.<br>Versione app visibile in Home e Impostazioni.<br>Mezza trasferta (no pasto, 11 euro esente).<br>Premio produttività include festività.</div></div>' +
+
+    '<div class="about-section"><div class="about-ver">v17 <span class="about-date">precedente</span></div>' +
+    '<div class="about-changes">Premio produttività trimestrale corretto.<br>Trasferte Italia a pacchetto.<br>Soglie esenzione fiscale CCNL.<br>Checkbox Pernottamento con auto-deduzione.</div></div>' +
+
+    '<button class="about-close" onclick="closeAbout()">Chiudi</button>';
+
+  document.getElementById('aboutWrap').classList.add('open');
+}
+function closeAbout() {
+  document.getElementById('aboutWrap').classList.remove('open');
 }
 
 // ── IMPOSTAZIONI ──
@@ -3305,6 +3352,29 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<!-- ═══ MODALE INFO / CRONOLOGIA ═══ -->
+<style>
+.about-wrap{position:fixed;inset:0;background:rgba(10,12,14,.55);display:none;align-items:center;justify-content:center;z-index:160;padding:16px;}
+.about-wrap.open{display:flex;}
+.about-box{background:#fff;border:1px solid #d3d1c7;border-radius:16px;width:100%;max-width:600px;max-height:85vh;overflow-y:auto;padding:24px 22px;box-shadow:0 20px 50px rgba(0,0,0,.25);animation:aboutIn .2s ease;}
+@keyframes aboutIn{from{opacity:0;transform:translateY(10px) scale(.97);}to{opacity:1;transform:none;}}
+.about-header{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
+.about-logo{font-size:32px;}
+.about-title{font-size:18px;font-weight:700;color:#1a1a18;}
+.about-sub{font-size:12px;color:#888;margin-top:2px;}
+.about-dev{font-size:12.5px;color:#6b6a63;margin-bottom:18px;}
+.about-section{margin-bottom:14px;}
+.about-ver{font-weight:700;font-size:13px;color:#1a1a18;margin-bottom:4px;display:flex;align-items:baseline;gap:6px;}
+.about-ver .about-date{font-weight:400;font-size:11px;color:#aaa;}
+.about-changes{font-size:11.5px;color:#6b6a63;line-height:1.6;padding-left:12px;border-left:2px solid #e8e6df;margin-bottom:6px;}
+.about-close{display:block;margin:14px auto 0;background:#1a1a18;color:#f5f4f0;border:none;border-radius:10px;padding:10px 32px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;}
+</style>
+
+<div class="about-wrap" id="aboutWrap" onclick="if(event.target===this)closeAbout()">
+  <div class="about-box" id="aboutBox"></div>
+</div>
+
 <button class="fab-back" id="fabBack" onclick="goHome()">&#8592; Torna alla home</button>
 </body>
 </html>
