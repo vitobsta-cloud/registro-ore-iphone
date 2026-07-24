@@ -575,7 +575,7 @@ tr:hover td{background:#fafaf8;}
   <div class="panel">
     <div class="ph">
       <h2>Modifica giornata</h2>
-      <button class="btn btn-s" id="mBtnTornaCliente" style="display:none" onclick="tornaAlCliente()">← Torna al cliente</button>
+      <button class="btn btn-s" id="mBtnTornaIndietro" onclick="tornaAllaSchermataOrigine()">← Indietro</button>
     </div>
     <div class="pb">
       <div class="row2">
@@ -793,7 +793,7 @@ tr:hover td{background:#fafaf8;}
 <div id="toast"></div>
 
 <script>
-var APP_VERSION = 'v31';
+var APP_VERSION = 'v32';
 var DB_KEY  = 'rl_db_v3';
 var CFG_KEY = 'rl_cfg_v3';
 var MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
@@ -1964,18 +1964,20 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
   var irpefGia     = (lordoGia - inpsGia) * ((cf.irpef||0)/100);
   var nettoGia     = lordoGia - inpsGia - irpefGia - addizTot + esenteGia;
 
-  // Giorni rimanenti: NON aggiungono altro importo ordinario (già coperto dal fisso).
-  // Le trasferte non si proiettano: nel preventivo contano solo quelle già inserite.
+  // Giorni rimanenti: NON aggiungono importo ordinario (già coperto dal fisso 173h).
+  // Straordinari e trasferte dei giorni non ancora inseriti NON vengono proiettati —
+  // non è possibile prevederli. Il totale mostrato è il MINIMO GARANTITO a fine mese
+  // (fisso CCNL + straordinari/trasferte già registrati). Ogni giorno aggiuntivo con
+  // straordinari o trasferte lo farà salire.
   var esenteRim    = 0;
   var tassabileRim = 0;
 
-  // TOTALE FINE MESE = il fisso CCNL è già completo di suo, quindi coincide col consuntivo
   var lordoTotBase = impOrdGia2 + impStraGia2 + impStraWeekendGia + tassabileGia + tassabileRim;
   var esenteTot    = esenteGia + esenteRim;
   var inpsTot      = lordoTotBase * ((cf.inps||0)/100);
   var irpefTot     = (lordoTotBase - inpsTot) * ((cf.irpef||0)/100);
   var nettoTot     = lordoTotBase - inpsTot - irpefTot - addizTot + esenteTot;
-  var lordoTot     = lordoTotBase; // lordo tassabile (senza quota esente)
+  var lordoTot     = lordoTotBase;
   var oreTot       = (oreOrdGia + oreStraGia) + oreRimanenti;
 
   // Spese pasto stimate per giorni rimanenti (media giornaliera)
@@ -1984,54 +1986,54 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
   var speseRim    = mediaSpese * giorniRimanenti;
   var speseTotal  = speseGia + speseRim;
 
+  // Variabili aggiuntive (straord+trasferte) per mostrare la parte variabile separatamente
+  var impVariabile = impStraGia2 + impStraWeekendGia + tassabileGia + esenteGia;
+
   el.innerHTML =
-    // Avviso giallo giorni rimanenti
+    // Info mese in corso
     '<div style="background:#fff8e1;border:1.5px solid #f5c842;border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start">' +
       '<span style="font-size:20px">⚠️</span>' +
       '<div>' +
-        '<div style="font-weight:600;font-size:13px;color:#7a5700;margin-bottom:4px">Mese in corso — ' + giorniRimanenti + ' giorn' + (giorniRimanenti===1?'o':'i') + ' lavorativ' + (giorniRimanenti===1?'o':'i') + ' rimanent' + (giorniRimanenti===1?'e':'i') + '</div>' +
-        '<div style="font-size:12px;color:#9a7010">Il consuntivo sopra si basa sui ' + giorniGia + ' giorni registrati.<br>Sotto trovi una stima con i ' + giorniRimanenti + ' giorni rimanenti a <b>' + (cf.ore_std||8) + 'h/giorno</b>.</div>' +
+        '<div style="font-weight:600;font-size:13px;color:#7a5700;margin-bottom:4px">Mese in corso — ' + giorniGia + ' giorn' + (giorniGia===1?'o':'i') + ' inserit' + (giorniGia===1?'o':'i') + ' su ' + (giorniGia+giorniRimanenti) + '</div>' +
+        '<div style="font-size:12px;color:#9a7010;line-height:1.5">Lo stipendio base (ordinario fisso ' + oreFissoCorr.toFixed(0) + 'h) è già incluso per intero.<br>Straordinari e trasferte crescono man mano che inserisci i giorni rimanenti.</div>' +
       '</div>' +
     '</div>' +
 
-    // Blocco A — già inserito (grigio)
+    // Riepilogo ore e parte variabile finora
     '<div style="background:#f9f8f5;border-radius:10px;padding:14px 16px;margin-bottom:10px">' +
-      '<div style="font-size:11px;font-weight:600;color:#5f5e5a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Già inserito (' + giorniGia + ' giorni)</div>' +
+      '<div style="font-size:11px;font-weight:600;color:#5f5e5a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Registrato finora (' + giorniGia + ' giorni)</div>' +
       '<div class="stats" style="margin-bottom:0">' +
         '<div class="stat"><div class="stat-l">Ore inserite</div><div class="stat-v">' + (oreOrdGia+oreStraGia).toFixed(1) + 'h</div></div>' +
-        '<div class="stat"><div class="stat-l">Netto reale</div><div class="stat-v" style="color:#3b6d11">' + nettoGia.toFixed(2) + ' €</div></div>' +
+        (straSplitCorr.feriale > 0 ? '<div class="stat"><div class="stat-l">Straord. fer.</div><div class="stat-v">' + straSplitCorr.feriale.toFixed(1) + 'h</div><div class="stat-s">' + impStraGia2.toFixed(2) + ' €</div></div>' : '') +
+        (straSplitCorr.weekend > 0 ? '<div class="stat"><div class="stat-l">Straord. Sab/Dom</div><div class="stat-v">' + straSplitCorr.weekend.toFixed(1) + 'h</div><div class="stat-s">' + impStraWeekendGia.toFixed(2) + ' €</div></div>' : '') +
+        (rimGiaTot > 0 ? '<div class="stat"><div class="stat-l">Trasferte</div><div class="stat-v">' + giorniConTrasfGia + ' gg</div><div class="stat-s">' + rimGiaTot.toFixed(2) + ' €</div></div>' : '') +
       '</div>' +
+      (giorniRimanenti > 0 ? '<div style="font-size:10.5px;color:#9a7010;margin-top:8px;line-height:1.4">' + giorniRimanenti + ' giorn' + (giorniRimanenti===1?'o':'i') + ' ancora da inserire (' + oreRimanenti.toFixed(0) + 'h) — vanno registrat' + (giorniRimanenti===1?'o':'i') + ' per il premio produttività.</div>' : '') +
     '</div>' +
 
-    // Blocco B — giorni rimanenti (giallo tratteggiato)
-    '<div style="background:#fff3cd;border-radius:10px;padding:14px 16px;margin-bottom:10px;border:1px dashed #f5c842">' +
-      '<div style="font-size:11px;font-weight:600;color:#7a5700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Giorni ancora da inserire (' + giorniRimanenti + ' × ' + (cf.ore_std||8) + 'h)</div>' +
-      '<div class="stats" style="margin-bottom:0">' +
-        '<div class="stat"><div class="stat-l">Ore da registrare</div><div class="stat-v">' + oreRimanenti.toFixed(0) + 'h</div></div>' +
-      '</div>' +
-      '<div style="font-size:10.5px;color:#9a7010;margin-top:8px;line-height:1.4">Non aggiungono importo: l\'ordinario è già il fisso CCNL (' + oreFissoCorr.toFixed(0) + 'h) sopra. Vanno comunque registrate per premio produttività e riepiloghi.</div>' +
-    '</div>' +
-
-    // Totale finale (scuro)
+    // Totale minimo garantito (scuro)
     '<div style="background:#1a1a18;border-radius:10px;padding:16px 18px">' +
-      '<div style="font-size:11px;font-weight:600;color:#888780;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Totale mese stimato</div>' +
-      '<div class="res-row" style="border-color:#333"><span style="color:#aaa">Lordo totale</span><span style="color:#f5f4f0"><b>' + lordoTot.toFixed(2) + ' €</b></span></div>' +
+      '<div style="font-size:11px;font-weight:600;color:#888780;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">' + (giorniRimanenti > 0 ? 'Netto minimo garantito' : 'Netto mese') + '</div>' +
+      '<div class="res-row" style="border-color:#333"><span style="color:#aaa">Ordinario fisso CCNL</span><span style="color:#f5f4f0">' + impOrdGia2.toFixed(2) + ' €</span></div>' +
+      ((impStraGia2+impStraWeekendGia) > 0 ? '<div class="res-row" style="border-color:#333"><span style="color:#aaa">Straordinari finora</span><span style="color:#f5f4f0">' + (impStraGia2+impStraWeekendGia).toFixed(2) + ' €</span></div>' : '') +
+      (rimGiaTot > 0 ? '<div class="res-row" style="border-color:#333"><span style="color:#aaa">Trasferte finora</span><span style="color:#f5f4f0">' + rimGiaTot.toFixed(2) + ' €</span></div>' : '') +
+      '<div class="res-row" style="border-color:#333"><span style="color:#aaa">Lordo</span><span style="color:#f5f4f0"><b>' + lordoTot.toFixed(2) + ' €</b></span></div>' +
       (esenteTot > 0 ? '<div class="res-row" style="border-color:#333"><span style="color:#81c784">+ Quota esente trasferte</span><span style="color:#81c784">+ ' + esenteTot.toFixed(2) + ' €</span></div>' : '') +
       '<div class="res-row" style="border-color:#333"><span style="color:#a87">INPS (' + (cf.inps||0) + '%)</span><span style="color:#e09090">− ' + inpsTot.toFixed(2) + ' €</span></div>' +
       '<div class="res-row" style="border-color:#333"><span style="color:#a87">IRPEF (' + (cf.irpef||0) + '%)</span><span style="color:#e09090">− ' + irpefTot.toFixed(2) + ' €</span></div>' +
       (addizTot > 0 ? '<div class="res-row" style="border-color:#333"><span style="color:#a87">Addizionali (reg.+com.)</span><span style="color:#e09090">− ' + addizTot.toFixed(2) + ' €</span></div>' : '') +
       '<div style="border-top:1px solid #444;margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">' +
-        '<span style="color:#f5f4f0;font-weight:600;font-size:14px">Netto stimato a fine mese</span>' +
+        '<span style="color:#f5f4f0;font-weight:600;font-size:14px">' + (giorniRimanenti > 0 ? 'Netto minimo' : 'Netto mese') + '</span>' +
         '<span style="color:#f5c842;font-size:20px;font-weight:700">' + nettoTot.toFixed(2) + ' €</span>' +
       '</div>' +
+      (giorniRimanenti > 0 ? '<div style="font-size:10.5px;color:#9a7010;margin-top:8px;line-height:1.4;text-align:center">Salirà con ogni giorno di straordinario o trasferta ancora da registrare.</div>' : '') +
     '</div>' +
     (speseTotal > 0 ?
-      '<div class="res-row" style="margin-top:10px"><span>Spese pasto stimate (pranzo+cena)</span><span style="color:#a32d2d">− ' + speseTotal.toFixed(2) + ' €</span></div>' +
+      '<div class="res-row" style="margin-top:10px"><span>Spese pasto ' + (giorniRimanenti > 0 ? 'stimate' : 'effettive') + ' (pranzo+cena)</span><span style="color:#a32d2d">− ' + speseTotal.toFixed(2) + ' €</span></div>' +
       '<div style="background:#333;border-radius:10px;padding:14px 16px;margin-top:6px">' +
-        '<div class="res-row" style="border:none"><span style="color:#f5f4f0"><b>Netto − Spese stimate</b></span><span style="color:#f5f4f0"><b>' + (nettoTot - speseTotal).toFixed(2) + ' €</b></span></div>' +
+        '<div class="res-row" style="border:none"><span style="color:#f5f4f0"><b>Netto − Spese</b></span><span style="color:#f5f4f0"><b>' + (nettoTot - speseTotal).toFixed(2) + ' €</b></span></div>' +
       '</div>'
-    : '') +
-    '<div style="font-size:11px;color:#b4b2a9;margin-top:10px;text-align:center">* Previsione solo ore ordinarie per i giorni rimanenti</div>';
+    : '');
 }
 
 // ── IMPOSTAZIONI ──
@@ -2819,16 +2821,9 @@ function apriModifica(idx, fromScreen) {
   document.getElementById('mFestivita').checked = !!(r.festivita && r.festivita > 0);
   document.getElementById('mIdx').value       = idx;
   document.getElementById('mOrigScreen').value = fromScreen;
-  // Quando si arriva dalla schermata Clienti, salva il nome del cliente per poterci tornare
-  var tornaBtn = document.getElementById('mBtnTornaCliente');
-  if(fromScreen === 'clienti') {
-    var nomeCliente = document.getElementById('clienteDetNome').textContent || '';
-    document.getElementById('mOrigCliente').value = nomeCliente;
-    if(tornaBtn) tornaBtn.style.display = '';
-  } else {
-    document.getElementById('mOrigCliente').value = '';
-    if(tornaBtn) tornaBtn.style.display = 'none';
-  }
+  // Salva il nome del cliente di origine per poterci tornare (usato solo da schermata clienti)
+  document.getElementById('mOrigCliente').value = (fromScreen === 'clienti' && document.getElementById('clienteDetNome'))
+    ? document.getElementById('clienteDetNome').textContent : '';
   document.getElementById('mPrevCalc').style.display = 'none';
 
   // trasferte
@@ -2887,6 +2882,15 @@ function tornaAlCliente() {
   else goHome();
 }
 
+function tornaAllaSchermataOrigine() {
+  var from = document.getElementById('mOrigScreen').value || 'visualizza';
+  var fromCliente = document.getElementById('mOrigCliente').value || '';
+  if(from === 'clienti' && fromCliente) { vai('clienti'); initClienti(); apriDettaglioCliente(fromCliente); }
+  else if(from === 'clienti') { vai('clienti'); initClienti(); }
+  else if(from === 'codici') { vai('codici'); initCodici(); }
+  else { vai('visualizza'); renderLista(); }
+}
+
 function salvaModifica() {
   var idx = parseInt(document.getElementById('mIdx').value);
   var d = db();
@@ -2918,11 +2922,7 @@ function salvaModifica() {
   saveDb(d);
   toast('✓ Modifiche salvate');
   aggiornaHome();
-  var from = document.getElementById('mOrigScreen').value || 'visualizza';
-  var fromCliente = document.getElementById('mOrigCliente').value || '';
-  if(from === 'clienti' && fromCliente) { vai('clienti'); initClienti(); apriDettaglioCliente(fromCliente); }
-  else if(from === 'clienti') { vai('clienti'); initClienti(); }
-  else { vai('visualizza'); renderLista(); }
+  tornaAllaSchermataOrigine();
 }
 
 function eliminaDaModifica() {
@@ -2931,11 +2931,7 @@ function eliminaDaModifica() {
   var d = db(); d.splice(idx, 1); saveDb(d);
   toast('Record eliminato');
   aggiornaHome();
-  var from = document.getElementById('mOrigScreen').value || 'visualizza';
-  var fromCliente = document.getElementById('mOrigCliente').value || '';
-  if(from === 'clienti' && fromCliente) { vai('clienti'); initClienti(); apriDettaglioCliente(fromCliente); }
-  else if(from === 'clienti') { vai('clienti'); initClienti(); }
-  else { vai('visualizza'); renderLista(); }
+  tornaAllaSchermataOrigine();
 }
 
 
