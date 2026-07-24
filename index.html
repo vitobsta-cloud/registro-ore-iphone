@@ -573,7 +573,10 @@ tr:hover td{background:#fafaf8;}
 <!-- ═══ MODIFICA ═══ -->
 <div class="scr" id="scrModifica">
   <div class="panel">
-    <div class="ph"><h2>Modifica giornata</h2></div>
+    <div class="ph">
+      <h2>Modifica giornata</h2>
+      <button class="btn btn-s" id="mBtnTornaCliente" style="display:none" onclick="tornaAlCliente()">← Torna al cliente</button>
+    </div>
     <div class="pb">
       <div class="row2">
         <div class="fg"><label>Data</label><input type="date" id="mData" disabled></div>
@@ -635,6 +638,7 @@ tr:hover td{background:#fafaf8;}
       <div class="fg"><label>Note</label><input type="text" id="mNote" placeholder="es. Trasferta Milano"></div>
       <input type="hidden" id="mIdx">
       <input type="hidden" id="mOrigScreen">
+      <input type="hidden" id="mOrigCliente">
       <div class="btn-row">
         <button class="btn btn-p" onclick="salvaModifica()">💾 Salva modifiche</button>
         <button class="btn btn-d" onclick="eliminaDaModifica()">🗑 Elimina</button>
@@ -789,7 +793,7 @@ tr:hover td{background:#fafaf8;}
 <div id="toast"></div>
 
 <script>
-var APP_VERSION = 'v30';
+var APP_VERSION = 'v31';
 var DB_KEY  = 'rl_db_v3';
 var CFG_KEY = 'rl_cfg_v3';
 var MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
@@ -1958,7 +1962,7 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
   var lordoGia     = impOrdGia2 + impStraGia2 + impStraWeekendGia + tassabileGia;
   var inpsGia      = lordoGia * ((cf.inps||0)/100);
   var irpefGia     = (lordoGia - inpsGia) * ((cf.irpef||0)/100);
-  var nettoGia     = lordoGia - inpsGia - irpefGia + esenteGia;
+  var nettoGia     = lordoGia - inpsGia - irpefGia - addizTot + esenteGia;
 
   // Giorni rimanenti: NON aggiungono altro importo ordinario (già coperto dal fisso).
   // Le trasferte non si proiettano: nel preventivo contano solo quelle già inserite.
@@ -2815,6 +2819,16 @@ function apriModifica(idx, fromScreen) {
   document.getElementById('mFestivita').checked = !!(r.festivita && r.festivita > 0);
   document.getElementById('mIdx').value       = idx;
   document.getElementById('mOrigScreen').value = fromScreen;
+  // Quando si arriva dalla schermata Clienti, salva il nome del cliente per poterci tornare
+  var tornaBtn = document.getElementById('mBtnTornaCliente');
+  if(fromScreen === 'clienti') {
+    var nomeCliente = document.getElementById('clienteDetNome').textContent || '';
+    document.getElementById('mOrigCliente').value = nomeCliente;
+    if(tornaBtn) tornaBtn.style.display = '';
+  } else {
+    document.getElementById('mOrigCliente').value = '';
+    if(tornaBtn) tornaBtn.style.display = 'none';
+  }
   document.getElementById('mPrevCalc').style.display = 'none';
 
   // trasferte
@@ -2867,6 +2881,12 @@ function getMTrasfData() {
   };
 }
 
+function tornaAlCliente() {
+  var nome = document.getElementById('mOrigCliente').value;
+  if(nome) { vai('clienti'); initClienti(); apriDettaglioCliente(nome); }
+  else goHome();
+}
+
 function salvaModifica() {
   var idx = parseInt(document.getElementById('mIdx').value);
   var d = db();
@@ -2899,7 +2919,9 @@ function salvaModifica() {
   toast('✓ Modifiche salvate');
   aggiornaHome();
   var from = document.getElementById('mOrigScreen').value || 'visualizza';
-  if(from === 'clienti') { vai('clienti'); initClienti(); }
+  var fromCliente = document.getElementById('mOrigCliente').value || '';
+  if(from === 'clienti' && fromCliente) { vai('clienti'); initClienti(); apriDettaglioCliente(fromCliente); }
+  else if(from === 'clienti') { vai('clienti'); initClienti(); }
   else { vai('visualizza'); renderLista(); }
 }
 
@@ -2910,7 +2932,9 @@ function eliminaDaModifica() {
   toast('Record eliminato');
   aggiornaHome();
   var from = document.getElementById('mOrigScreen').value || 'visualizza';
-  if(from === 'clienti') { vai('clienti'); initClienti(); }
+  var fromCliente = document.getElementById('mOrigCliente').value || '';
+  if(from === 'clienti' && fromCliente) { vai('clienti'); initClienti(); apriDettaglioCliente(fromCliente); }
+  else if(from === 'clienti') { vai('clienti'); initClienti(); }
   else { vai('visualizza'); renderLista(); }
 }
 
