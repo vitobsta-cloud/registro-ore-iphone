@@ -794,7 +794,7 @@ tr:hover td{background:#fafaf8;}
 <div id="toast"></div>
 
 <script>
-var APP_VERSION = 'v34';
+var APP_VERSION = 'v35';
 var DB_KEY  = 'rl_db_v3';
 var CFG_KEY = 'rl_cfg_v3';
 var MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
@@ -1714,13 +1714,13 @@ function calcolaBusta() {
     '<div class="res-row"><span>Ordinario fisso CCNL (' + oreFisso.toFixed(0) + 'h × ' + (cf.paga||0).toFixed(2) + ' €)</span><span>' + impOrd.toFixed(2) + ' €</span></div>' +
     (totStra > 0 ? '<div class="res-row"><span>Straordinari feriali (' + totStra.toFixed(1) + 'h × ' + (cf.paga_stra||0).toFixed(2) + ' €)</span><span>' + impStra.toFixed(2) + ' €</span></div>' : '') +
     (totStraWeekend > 0 ? '<div class="res-row"><span>Straordinari Sab/Dom (' + totStraWeekend.toFixed(1) + 'h × ' + (cf.paga_stra_weekend||0).toFixed(2) + ' €)</span><span>' + impStraWeekend.toFixed(2) + ' €</span></div>' : '') +
-    (nTrasf > 0 ? '<div class="res-row"><span>Rimborsi trasferte</span><span>' + totTrasf.toFixed(2) + ' €</span></div>' : '') +
-    '<div class="res-row" style="border-top:1.5px solid #e0e0e0;margin-top:6px;padding-top:10px"><span><b>Totale Lordo</b></span><span><b>' + lordo.toFixed(2) + ' €</b></span></div>' +
-    (totEsente > 0 ? '<div style="font-size:10px;color:#7a7c82;margin:-2px 0 4px;line-height:1.3">Include solo la quota tassabile delle trasferte (' + totTassabile.toFixed(2) + ' €). La quota esente (' + totEsente.toFixed(2) + ' €) viene aggiunta al netto.</div>' : '') +
+    (totTassabile > 0 ? '<div class="res-row"><span>Trasferte tassabili (eccedenza soglia)</span><span>' + totTassabile.toFixed(2) + ' €</span></div>' : '') +
+    '<div class="res-row" style="border-top:1.5px solid #e0e0e0;margin-top:6px;padding-top:10px"><span><b>Totale Lordo</b> (base imponibile)</span><span><b>' + lordo.toFixed(2) + ' €</b></span></div>' +
     '<div class="res-row"><span>INPS (' + (cf.inps||0) + '% su ' + lordo.toFixed(2) + ' €)</span><span style="color:#a32d2d">− ' + inps.toFixed(2) + ' €</span></div>' +
     '<div class="res-row"><span>IRPEF (' + (cf.irpef||0) + '% su ' + (lordo - inps).toFixed(2) + ' €)</span><span style="color:#a32d2d">− ' + irpef.toFixed(2) + ' €</span></div>' +
     (addizReg > 0 ? '<div class="res-row"><span>Add. regionale</span><span style="color:#a32d2d">− ' + addizReg.toFixed(2) + ' €</span></div>' : '') +
     (addizCom > 0 ? '<div class="res-row"><span>Add. comunale</span><span style="color:#a32d2d">− ' + addizCom.toFixed(2) + ' €</span></div>' : '') +
+    (totEsente > 0 ? '<div class="res-row" style="border-top:1px solid #e0e0e0;margin-top:6px;padding-top:6px"><span style="color:#3b6d11">+ Trasferte esenti (non tassate)</span><span style="color:#3b6d11">+ ' + totEsente.toFixed(2) + ' €</span></div>' : '') +
     '<div class="busta-highlight" style="margin-top:10px"><div class="res-row" style="border:none"><span><b>Stimato Netto in Busta</b></span><span><b>' + netto.toFixed(2) + ' €</b></span></div></div>' +
 
     (premioProdImporto > 0 ?
@@ -2635,12 +2635,13 @@ function aggiornaGrafici() {
       (straSplitG.weekend?'<div class="stat"><div class="stat-l">Straord. Sab/Dom</div><div class="stat-v">'+straSplitG.weekend.toFixed(1)+'h</div><div class="stat-s">'+impStraWeekend.toFixed(2)+' €</div></div>':'')+
       (rimTot?'<div class="stat"><div class="stat-l">Trasferte</div><div class="stat-v">'+rimTot.toFixed(2)+' €</div></div>':'')+
     '</div>'+
-    '<div class="res-row"><span>Totale Lordo</span><span><b>'+lordo.toFixed(2)+' €</b></span></div>'+
-    (esenteTot>0?'<div style="font-size:10px;color:#7a7c82;margin:-2px 0 4px;line-height:1.3">Include solo la quota tassabile delle trasferte. Quota esente ('+esenteTot.toFixed(2)+' €) aggiunta al netto.</div>':'')+
+    (tassabileTot>0?'<div class="res-row"><span>Trasferte tassabili (eccedenza soglia)</span><span>'+tassabileTot.toFixed(2)+' €</span></div>':'')+
+    '<div class="res-row" style="border-top:1.5px solid #e0e0e0;margin-top:4px;padding-top:8px"><span><b>Totale Lordo</b> (base imponibile)</span><span><b>'+lordo.toFixed(2)+' €</b></span></div>'+
     '<div class="res-row"><span>INPS ('+c.inps+'% su '+lordo.toFixed(2)+' €)</span><span style="color:#a32d2d">− '+inps.toFixed(2)+' €</span></div>'+
     '<div class="res-row"><span>IRPEF ('+c.irpef+'% su '+(lordo-inps).toFixed(2)+' €)</span><span style="color:#a32d2d">− '+irpef.toFixed(2)+' €</span></div>'+
     (addizRegC>0?'<div class="res-row"><span>Add. regionale</span><span style="color:#a32d2d">− '+addizRegC.toFixed(2)+' €</span></div>':'')+
     (addizComC>0?'<div class="res-row"><span>Add. comunale</span><span style="color:#a32d2d">− '+addizComC.toFixed(2)+' €</span></div>':'')+
+    (esenteTot>0?'<div class="res-row" style="border-top:1px solid #e0e0e0;margin-top:4px;padding-top:4px"><span style="color:#3b6d11">+ Trasferte esenti (non tassate)</span><span style="color:#3b6d11">+ '+esenteTot.toFixed(2)+' €</span></div>':'')+
     '<div class="busta-highlight res-row res-tot" style="margin-top:8px"><span><b>Stimato Netto in Busta</b></span><span><b>'+netto.toFixed(2)+' €</b></span></div>'+
     (spese?'<div class="res-row" style="margin-top:6px"><span>Spese effettive (pranzo+cena)</span><span style="color:#a32d2d">− '+spese.toFixed(2)+' €</span></div>'+
       '<div class="busta-final"><div class="res-row" style="border:none"><span><b>Netto − Spese</b></span><span><b>'+(netto-spese).toFixed(2)+' €</b></span></div></div>':'');
