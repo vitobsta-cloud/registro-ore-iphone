@@ -203,7 +203,7 @@ tr:hover td{background:#fafaf8;}
 <div class="credits" onclick="showAbout()" style="cursor:pointer">TR/software <span id="creditsVersione" style="opacity:.6"></span></div>
 
 <div class="hdr">
-  <button class="hdr-back" id="btnBack" onclick="goHome()">&#8592; Home</button>
+  <button class="hdr-back" id="btnBack" onclick="goBack()">&#8592; Indietro</button>
   <span class="hdr-title" id="hdrTitle">Registro Lavoro</span>
   <span class="hdr-sub" id="hdrSub"></span>
 </div>
@@ -794,7 +794,7 @@ tr:hover td{background:#fafaf8;}
 <div id="toast"></div>
 
 <script>
-var APP_VERSION = 'v35';
+var APP_VERSION = 'v36';
 var DB_KEY  = 'rl_db_v3';
 var CFG_KEY = 'rl_cfg_v3';
 var MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
@@ -831,7 +831,16 @@ function saveCfg(c) { localStorage.setItem(CFG_KEY, JSON.stringify(c)); }
 var TITLES = { inserisci:'Inserisci giornata', visualizza:'Visualizza', trasferte:'Riepilogo Trasferte', busta:'Busta Paga Preventiva', grafici:'Grafici', clienti:'Ricerca Clienti', codici:'Ricerca Codici Errore', modifica:'Modifica giornata', impostazioni:'Impostazioni' };
 var SCREENS = { home:'scrHome', inserisci:'scrInserisci', visualizza:'scrVisualizza', trasferte:'scrTrasferte', busta:'scrBusta', grafici:'scrGrafici', clienti:'scrClienti', codici:'scrCodici', modifica:'scrModifica', impostazioni:'scrImpostazioni' };
 
-function vai(name) {
+var navStack = [];
+function vai(name, skipStack) {
+  // Salva la schermata corrente nello stack (se non è una navigazione "indietro")
+  if(!skipStack) {
+    var current = '';
+    Object.keys(SCREENS).forEach(function(k){ if(document.getElementById(SCREENS[k]).classList.contains('on')) current = k; });
+    if(current && current !== name) navStack.push(current);
+    // Limita lo stack a 10 livelli per sicurezza
+    if(navStack.length > 10) navStack.shift();
+  }
   Object.keys(SCREENS).forEach(function(k){ document.getElementById(SCREENS[k]).classList.remove('on'); });
   document.getElementById(SCREENS[name]).classList.add('on');
   window.scrollTo(0, 0);
@@ -849,7 +858,15 @@ function vai(name) {
   if(name === 'clienti')     initClienti();
   if(name === 'codici')      initCodici();
 }
-function goHome() { vai('home'); }
+function goBack() {
+  if(navStack.length > 0) {
+    var prev = navStack.pop();
+    vai(prev, true); // skipStack=true per non rimetterla nello stack
+  } else {
+    vai('home', true);
+  }
+}
+function goHome() { navStack = []; vai('home', true); }
 
 // ── HOME ──
 function aggiornaHome() {
@@ -3378,6 +3395,6 @@ if ('serviceWorker' in navigator) {
   <div class="about-box" id="aboutBox"></div>
 </div>
 
-<button class="fab-back" id="fabBack" onclick="goHome()">&#8592; Torna alla home</button>
+<button class="fab-back" id="fabBack" onclick="goBack()">&#8592; Indietro</button>
 </body>
 </html>
