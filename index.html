@@ -794,7 +794,7 @@ tr:hover td{background:#fafaf8;}
 <div id="toast"></div>
 
 <script>
-var APP_VERSION = 'v36';
+var APP_VERSION = 'v37';
 var DB_KEY  = 'rl_db_v3';
 var CFG_KEY = 'rl_cfg_v3';
 var MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
@@ -968,13 +968,18 @@ function calcolaRimborsoGiornoItalia(t, cf) {
   var nPastiCliente = (t.clientePranzo?1:0) + (t.clienteCena?1:0);
   var nPastiNostro   = (t.nostroPranzo?1:0)  + (t.nostroCena?1:0);
   var tot = 0;
+  // Parte cliente: se c'è pernottamento, usa la tariffa con pernottamento
   if(nPastiCliente === 1)      tot += pern ? (cf.cliente_1p_pern||0) : (cf.cliente_1p||0);
   else if(nPastiCliente === 2) tot += pern ? (cf.cliente_2p_pern||0) : (cf.cliente_2p||0);
-  if(nPastiNostro === 1)       tot += pern ? (cf.nostro_1p_pern||0) : (cf.nostro_1p||0);
-  else if(nPastiNostro === 2)  tot += pern ? (cf.nostro_2p_pern||0) : (cf.nostro_2p||0);
+  // Parte nostro: la maggiorazione pernottamento si applica SOLO se NON ci sono anche
+  // pasti a carico cliente (verificato sulla busta di luglio 2026: quando il pasto è misto
+  // cliente+nostro con pernottamento, il nostro resta alla tariffa base senza maggiorazione,
+  // perché il pernottamento è già coperto dalla voce cliente).
+  var nostroPern = pern && nPastiCliente === 0; // pernottamento sul nostro solo se non c'è cliente
+  if(nPastiNostro === 1)       tot += nostroPern ? (cf.nostro_1p_pern||0) : (cf.nostro_1p||0);
+  else if(nPastiNostro === 2)  tot += nostroPern ? (cf.nostro_2p_pern||0) : (cf.nostro_2p||0);
   else if(nPastiNostro === 0 && nPastiCliente === 0 && pern) tot += (cf.nostro_0p_pern||0);
   // Mezza trasferta: no pasti, no pernottamento, ma trasferta oltre le 4h — spunta manuale
-  // (la soglia ore va verificata dall'utente prima di spuntare, non è dedotta dal registro).
   else if(nPastiNostro === 0 && nPastiCliente === 0 && !pern && t.mezzaTrasf) tot += (cf.nostro_0p||0);
   return tot;
 }
@@ -2066,8 +2071,17 @@ function showAbout() {
     '</div>' +
     '<div class="about-dev">Sviluppato da TR/software. PWA per la gestione ore, trasferte e busta paga.</div>' +
 
-    '<div class="about-section"><div class="about-ver">v33 <span class="about-date">luglio 2026</span></div>' +
-    '<div class="about-changes">Aggiunta schermata Info / Cronologia versioni.<br>Accessibile dal badge TR/software e da Impostazioni.</div></div>' +
+    '<div class="about-section"><div class="about-ver">v37 <span class="about-date">agosto 2026</span></div>' +
+    '<div class="about-changes">Fix calcolo trasferte miste (cliente+nostro con pernottamento): la maggiorazione pernottamento si applica ora solo alla parte cliente, non a entrambe. Verificato su busta luglio 2026: scarto trasferte azzerato (841€ = 841€).</div></div>' +
+
+    '<div class="about-section"><div class="about-ver">v36 <span class="about-date">agosto 2026</span></div>' +
+    '<div class="about-changes">Navigazione "Indietro" con stack: il pulsante ora torna alla schermata precedente (non sempre alla Home). Funziona ovunque nell\'app.</div></div>' +
+
+    '<div class="about-section"><div class="about-ver">v35 <span class="about-date">agosto 2026</span></div>' +
+    '<div class="about-changes">Breakdown tasse esplicito: trasferte tassabili separate da esenti nel Calcolo stipendio. INPS e IRPEF mostrano la base di calcolo.</div></div>' +
+
+    '<div class="about-section"><div class="about-ver">v33–v34 <span class="about-date">luglio 2026</span></div>' +
+    '<div class="about-changes">Schermata Info / Cronologia versioni (accessibile dal badge TR/software e da Impostazioni).<br>Breakdown tasse nel Consuntivo e Grafici.</div></div>' +
 
     '<div class="about-section"><div class="about-ver">v32 <span class="about-date">luglio 2026</span></div>' +
     '<div class="about-changes">Preventivo ristrutturato (netto minimo garantito, niente stime).<br>Pulsante "Indietro" universale in Modifica (Visualizza, Clienti, Codici).<br>Fix ritorno al dettaglio cliente specifico dopo modifica.</div></div>' +
