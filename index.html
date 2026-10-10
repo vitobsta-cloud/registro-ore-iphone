@@ -175,6 +175,12 @@ tr:hover td{background:#fafaf8;}
 .pin-input input:focus{border-color:#1a1a18;}
 .pin-error{color:#a32d2d;font-size:13px;min-height:18px;margin-bottom:12px;}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a18;color:#f5f4f0;padding:10px 22px;border-radius:10px;font-size:14px;display:none;z-index:9999;white-space:nowrap;}
+.ac-wrap{position:relative;}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid #d4d2cc;border-top:none;border-radius:0 0 10px 10px;max-height:180px;overflow-y:auto;z-index:100;display:none;box-shadow:0 4px 12px rgba(0,0,0,.12);}
+.ac-item{padding:10px 14px;font-size:14px;cursor:pointer;border-bottom:1px solid #eee;}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:active,.ac-item:hover{background:#f0eeea;}
+.ac-item b{font-weight:700;}
 
 @media(max-width:450px){
   .row2{grid-template-columns:1fr;}
@@ -252,7 +258,7 @@ tr:hover td{background:#fafaf8;}
     <div class="pb">
       <div class="row2">
         <div class="fg"><label>Data</label><input type="date" id="fData"></div>
-        <div class="fg"><label>Cliente</label><input type="text" id="fCliente" placeholder="Nome cliente" oninput="onClienteInput()"></div>
+        <div class="fg"><label>Cliente</label><div class="ac-wrap"><input type="text" id="fCliente" placeholder="Nome cliente" oninput="onClienteInput();acFiltra('fCliente')" autocomplete="off"><div class="ac-list" id="fCliente-ac"></div></div></div>
       </div>
 
       <div class="sec-lbl">Mattino</div>
@@ -559,7 +565,7 @@ tr:hover td{background:#fafaf8;}
     <div class="pb">
       <div class="row2">
         <div class="fg"><label>Data</label><input type="date" id="mData" disabled></div>
-        <div class="fg"><label>Cliente</label><input type="text" id="mCliente" placeholder="Nome cliente"></div>
+        <div class="fg"><label>Cliente</label><div class="ac-wrap"><input type="text" id="mCliente" placeholder="Nome cliente" oninput="acFiltra('mCliente')" autocomplete="off"><div class="ac-list" id="mCliente-ac"></div></div></div>
       </div>
       <div class="sec-lbl">Mattino</div>
       <div class="row2">
@@ -951,6 +957,60 @@ function onClienteInput() {
   aggiornaStatoAssenze();
 }
 
+// ── Autocomplete clienti ──
+function acGetClienti() {
+  var nomi = {};
+  db().forEach(function(r) {
+    if (!r.cliente || !r.manuale) return;
+    var c = r.cliente.trim();
+    // escludi nomi speciali
+    if (['Ferie','Malattia','Permesso','Festività','festività'].indexOf(c) !== -1) return;
+    if (!nomi[c.toLowerCase()]) nomi[c.toLowerCase()] = { nome: c, count: 0 };
+    nomi[c.toLowerCase()].count++;
+  });
+  // ordina per frequenza (più usati prima)
+  return Object.values(nomi).sort(function(a, b) { return b.count - a.count; });
+}
+
+function acFiltra(inputId) {
+  var input = document.getElementById(inputId);
+  var listEl = document.getElementById(inputId + '-ac');
+  var val = input.value.trim().toLowerCase();
+  if (val.length === 0) { listEl.style.display = 'none'; return; }
+  var clienti = acGetClienti();
+  var filtrati = clienti.filter(function(c) {
+    return c.nome.toLowerCase().indexOf(val) !== -1;
+  });
+  // non mostrare se il testo corrisponde esattamente a un cliente
+  if (filtrati.length === 1 && filtrati[0].nome.toLowerCase() === val) {
+    listEl.style.display = 'none'; return;
+  }
+  if (filtrati.length === 0) { listEl.style.display = 'none'; return; }
+  var html = '';
+  filtrati.slice(0, 6).forEach(function(c) {
+    var idx = c.nome.toLowerCase().indexOf(val);
+    var highlighted = c.nome.substring(0, idx) + '<b>' + c.nome.substring(idx, idx + val.length) + '</b>' + c.nome.substring(idx + val.length);
+    html += '<div class="ac-item" onmousedown="acSeleziona(\'' + inputId + '\',\'' + c.nome.replace(/'/g, "\\'") + '\')">' + highlighted + '</div>';
+  });
+  listEl.innerHTML = html;
+  listEl.style.display = 'block';
+}
+
+function acSeleziona(inputId, nome) {
+  var input = document.getElementById(inputId);
+  input.value = nome;
+  document.getElementById(inputId + '-ac').style.display = 'none';
+  if (inputId === 'fCliente') onClienteInput();
+  input.focus();
+}
+
+// Chiudi autocomplete quando si clicca fuori
+document.addEventListener('click', function(e) {
+  document.querySelectorAll('.ac-list').forEach(function(el) {
+    if (!el.parentElement.contains(e.target)) el.style.display = 'none';
+  });
+});
+
 function aggiornaStatoAssenze() {
   var fClEl = document.getElementById('fCliente');
   var fOrdEl = document.getElementById('fOrd');
@@ -1287,7 +1347,7 @@ function renderRiepilogo() {
     rows.forEach(function(r){
       var d2=new Date(r.data+'T12:00:00'); var dow=d2.getDay();
       if((dow===0||dow===6) && (r.ore_stra||0)===0) return; // sab/dom senza straord: salta
-      if((r.ore_tot||0)>0||(r.malattia||0)>0||(r.ferie||0)>0) giorni++;
+      if((r.ore_tot||0)>0||(r.malattia||0)>0||(r.ferie||0)>0||(r.permessi||0)>0||(r.festivita||0)>0) giorni++;
       oreTot+=r.ore_tot||0; oreOrd+=r.ore_ord||0; oreStra+=r.ore_stra||0;
       kmTot+=r.km||0; assenzeTot+=(r.malattia||0)+(r.ferie||0)+(r.permessi||0);
     });
@@ -1587,7 +1647,7 @@ function calcolaBusta() {
         '<div class="res-row" style="border-color:#c5e1a5"><span>Premio lordo ('+premioProdOre.toFixed(1)+'h × '+(cf.premio_produttivita||0).toFixed(2)+' €)</span><span><b>' + premioProdImporto.toFixed(2) + ' €</b></span></div>' +
         '<div class="res-row" style="border-color:#c5e1a5"><span>− INPS ('+(cf.inps||0).toFixed(2)+'%) e IRPEF ('+(cf.irpef||0).toFixed(2)+'%)</span><span style="color:#a32d2d">− ' + (premioProdImporto - premioProdNetto).toFixed(2) + ' €</span></div>' +
         '<div class="res-row" style="border-color:#c5e1a5"><span>Premio netto</span><span><b style="color:#3b6d11">+ ' + premioProdNetto.toFixed(2) + ' €</b></span></div>' +
-        '<div style="font-size:10.5px;color:#7a7c82;margin-top:6px;line-height:1.4">Ore = ord. + straord. + ferie + permessi. Non include festività godute e ore viaggio (non tracciate in app) — la busta reale può essere leggermente più alta.</div>' +
+        '<div style="font-size:10.5px;color:#7a7c82;margin-top:6px;line-height:1.4">Ore = ord. + straord. (no ferie/permessi/festività). Non include ore viaggio (non tracciate in app) — la busta reale può essere leggermente più alta.</div>' +
         '<div style="border-top:1px solid #a5d6a7;margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">' +
           '<span style="font-weight:700;color:#1a1a18;font-size:14px">Netto + Premio</span>' +
           '<span style="font-weight:700;color:#3b6d11;font-size:18px">' + (netto + premioProdNetto).toFixed(2) + ' €</span>' +
@@ -1649,7 +1709,7 @@ function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, 
 
   // giorni lavorativi effettivamente registrati nel DB per questo mese
   var giorniGia = records.filter(function(r){
-    return (r.ore_tot||0) > 0 || (r.malattia||0) > 0 || (r.ferie||0) > 0;
+    return (r.ore_tot||0) > 0 || (r.malattia||0) > 0 || (r.ferie||0) > 0 || (r.permessi||0) > 0 || (r.festivita||0) > 0;
   }).length;
 
   // giorni rimanenti = totale lun-ven del mese - giorni già registrati
@@ -2287,7 +2347,7 @@ function aggiornaGrafici() {
   })();
 
   // ── Riepilogo testo ──
-  var giorni = records.filter(function(r){ return (r.ore_tot||0)>0||(r.malattia||0)>0||(r.ferie||0)>0; }).length;
+  var giorni = records.filter(function(r){ return (r.ore_tot||0)>0||(r.malattia||0)>0||(r.ferie||0)>0||(r.permessi||0)>0||(r.festivita||0)>0; }).length;
   document.getElementById('grafRiepilogo').innerHTML =
     '<div class="stats">'+
       '<div class="stat"><div class="stat-l">Giorni lav.</div><div class="stat-v">'+giorni+'</div></div>'+
@@ -2335,7 +2395,7 @@ function aggiornaGrafici() {
   var addizTotC = addizRegC + addizComC; // trattenute mensili fisse
   var netto   = lordo - inps - irpef - addizTotC + esenteTot;
   var spese   = records.reduce(function(s,r){return s+(r.spesa_pranzo||0)+(r.spesa_cena||0);},0);
-  var giorniGia = records.filter(function(r){return (r.ore_tot||0)>0||(r.malattia||0)>0||(r.ferie||0)>0;}).length;
+  var giorniGia = records.filter(function(r){return (r.ore_tot||0)>0||(r.malattia||0)>0||(r.ferie||0)>0||(r.permessi||0)>0||(r.festivita||0)>0;}).length;
 
   // Festivi per il preventivo
   var FEST=['01-01','01-06','04-25','05-01','06-02','08-15','11-01','12-08','12-25','12-26'];
