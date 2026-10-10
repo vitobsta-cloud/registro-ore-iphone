@@ -193,7 +193,7 @@ tr:hover td{background:#fafaf8;}
 </head>
 <body>
 
-<div class="credits">TR/software v40</div>
+<div class="credits">TR/software v41</div>
 
 <div class="hdr">
   <button class="hdr-back" id="btnBack" onclick="goHome()">&#8592; Home</button>
@@ -765,6 +765,158 @@ tr:hover td{background:#fafaf8;}
       <p id="infoCount" style="font-weight:600;color:#1a1a18;margin-bottom:4px;"></p>
       <p>I dati sono salvati nel browser (localStorage).</p>
       <p>Esporta regolarmente il JSON come backup.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="pb" style="padding:0;">
+      <div onclick="toggleChangelog()" style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:15px;">📋</span>
+          <div><h3 style="font-size:15px;font-weight:600;color:#1a1a18;">Versione attuale: v41</h3><p style="font-size:12px;color:#aaa;margin-top:2px;">Tocca per vedere tutte le versioni</p></div>
+        </div>
+        <span id="changelogArrow" style="font-size:13px;color:#aaa;transition:transform .2s;">▶</span>
+      </div>
+      <div id="changelogBody" style="display:none;padding:0 18px 16px;font-size:13px;color:#5f5e5a;line-height:1.8;border-top:1px solid #eee;">
+        <div style="margin:14px 0;">
+          <strong style="color:#1a1a18;">v41</strong> <span style="color:#aaa;">— Ott 2026</span>
+          <p>• Cronistoria versioni nelle impostazioni</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v40</strong> <span style="color:#aaa;">— Ott 2026</span>
+          <p>• Autocomplete nome cliente basato sullo storico</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v39</strong> <span style="color:#aaa;">— Ott 2026</span>
+          <p>• Fix conteggio giorni: festività e permessi ora contati nel preventivo</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v38</strong> <span style="color:#aaa;">— Ott 2026</span>
+          <p>• Fix premio produttività: solo ore ord. + straord. (no ferie/permessi/festività)</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v37</strong> <span style="color:#aaa;">— Ott 2026</span>
+          <p>• Paga straordinario weekend separata (sabato/domenica 50%)</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v36</strong> <span style="color:#aaa;">— Ott 2026</span>
+          <p>• Ricerca Codici Errore con storico interventi per codice</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v35</strong> <span style="color:#aaa;">— Ott 2026</span>
+          <p>• Miglioramenti grafici e layout statistiche</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v34</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Grafici interattivi con Chart.js per periodo personalizzato</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v33</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Ricerca per cliente con storico completo interventi</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v32</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Trasferta Estero con rimborso pranzo e cena separati</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v31</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Miglioramento layout trasferte e riepilogo</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v30</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Riepilogo trasferte con totali per tipo</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v29</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Trasferta Italia a pacchetto (carico cliente/nostro)</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v28</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Addizionali regionale e comunale nel preventivo</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v27</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Premio produttività trimestrale (mar/giu/set/dic)</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v26</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Festività italiane con calcolo automatico Pasqua/Pasquetta</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v25</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• IRPEF e INPS nel preventivo busta paga</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v24</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Ordinario fisso CCNL 173h/mese nel calcolo busta</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v23</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Busta Paga Preventiva: prima versione stima stipendio</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v22</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Gestione permessi e festività nell'inserimento</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v21</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Modifica giornata con tutti i campi editabili</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v20</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Conferma prima di eliminare una giornata</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v19</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• PIN di protezione per la sezione busta paga</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v18</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Importa/esporta dati completi in JSON</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v17</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Impostazioni parametri di lavoro personalizzabili</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v16</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Riepilogo mensile ore con totali e medie</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v15</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Gestione malattia e ferie nell'inserimento</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v14</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Visualizzazione registro con filtro per mese</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v13</strong> <span style="color:#aaa;">— Set 2026</span>
+          <p>• Calcolo automatico ore ordinarie/straordinarie da orari</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v12</strong> <span style="color:#aaa;">— Ago 2026</span>
+          <p>• Note e codici errore nell'inserimento giornata</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v11</strong> <span style="color:#aaa;">— Ago 2026</span>
+          <p>• Km percorsi e trasferta base</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v10</strong> <span style="color:#aaa;">— Ago 2026</span>
+          <p>• Orario mattino e pomeriggio separati</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v5</strong> <span style="color:#aaa;">— Ago 2026</span>
+          <p>• PWA installabile con service worker offline</p>
+          <p>• Logo e manifest per installazione su smartphone</p>
+        </div>
+        <div>
+          <strong style="color:#1a1a18;">v1</strong> <span style="color:#aaa;">— Ago 2026</span>
+          <p>• Versione iniziale: inserimento giornate lavorative</p>
+          <p>• Ore ordinarie e straordinarie, nome cliente</p>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -2945,6 +3097,18 @@ function bloccaBusta() {
   document.getElementById('bustaLock').style.display = 'block';
   resetPin();
   setTimeout(function(){ document.getElementById('pin1').focus(); }, 200);
+}
+
+function toggleChangelog() {
+  var body = document.getElementById('changelogBody');
+  var arrow = document.getElementById('changelogArrow');
+  if (body.style.display === 'none') {
+    body.style.display = 'block';
+    arrow.style.transform = 'rotate(90deg)';
+  } else {
+    body.style.display = 'none';
+    arrow.style.transform = 'rotate(0deg)';
+  }
 }
 
 function salvaPin() {
