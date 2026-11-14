@@ -193,7 +193,7 @@ tr:hover td{background:#fafaf8;}
 </head>
 <body>
 
-<div class="credits">TR/software v41</div>
+<div class="credits">TR/software v43</div>
 
 <div class="hdr">
   <button class="hdr-back" id="btnBack" onclick="goHome()">&#8592; Home</button>
@@ -257,7 +257,7 @@ tr:hover td{background:#fafaf8;}
     <div class="ph"><h2>Nuova giornata</h2></div>
     <div class="pb">
       <div class="row2">
-        <div class="fg"><label>Data</label><input type="date" id="fData"></div>
+        <div class="fg"><label>Data</label><input type="date" id="fData" onchange="autoCalc()"></div>
         <div class="fg"><label>Cliente</label><div class="ac-wrap"><input type="text" id="fCliente" placeholder="Nome cliente" oninput="onClienteInput();acFiltra('fCliente')" autocomplete="off"><div class="ac-list" id="fCliente-ac"></div></div></div>
       </div>
 
@@ -666,8 +666,10 @@ tr:hover td{background:#fafaf8;}
     <div class="ph"><h2>Parametri di lavoro</h2></div>
     <div class="pb">
       <div class="set-row"><div class="set-info"><h3>Ore ordinarie/giorno</h3><p>Soglia per gli straordinari</p></div><input type="number" id="setOreStd" step="0.5" min="1" max="24"></div>
+      <div class="set-row"><div class="set-info"><h3>Ore ordinarie fisse/mese</h3><p>Stipendio fisso CCNL (173h)</p></div><input type="number" id="setOreFisse" step="1" min="0"></div>
       <div class="set-row"><div class="set-info"><h3>Paga €/ora ordinaria</h3><p>Tariffa oraria base</p></div><input type="number" id="setPaga" step="0.01" min="0"></div>
       <div class="set-row"><div class="set-info"><h3>Paga €/ora straordinaria</h3><p>Maggiore della paga base</p></div><input type="number" id="setPagaStra" step="0.01" min="0"></div>
+      <div class="set-row"><div class="set-info"><h3>Maggiorazione sabato/festivi %</h3><p>Straordinario nei giorni non lavorativi</p></div><input type="number" id="setMaggWE" step="1" min="0"></div>
       <div class="set-row"><div class="set-info"><h3>Trattenuta INPS %</h3><p>Percentuale contributi</p></div><input type="number" id="setInps" step="0.01" min="0" max="100"></div>
       <div class="set-row"><div class="set-info"><h3>Trattenuta IRPEF %</h3><p>Percentuale imposta</p></div><input type="number" id="setIrpef" step="0.01" min="0" max="100"></div>
       <div class="set-row"><div class="set-info"><h3>Add. regionale (€)</h3><p>Rata mensile, dalla busta</p></div><input type="number" id="setAddizReg" step="0.01" min="0"></div>
@@ -773,12 +775,26 @@ tr:hover td{background:#fafaf8;}
       <div onclick="toggleChangelog()" style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;cursor:pointer;">
         <div style="display:flex;align-items:center;gap:10px;">
           <span style="font-size:15px;">📋</span>
-          <div><h3 style="font-size:15px;font-weight:600;color:#1a1a18;">Versione attuale: v41</h3><p style="font-size:12px;color:#aaa;margin-top:2px;">Tocca per vedere tutte le versioni</p></div>
+          <div><h3 style="font-size:15px;font-weight:600;color:#1a1a18;">Versione attuale: v43</h3><p style="font-size:12px;color:#aaa;margin-top:2px;">Tocca per vedere tutte le versioni</p></div>
         </div>
         <span id="changelogArrow" style="font-size:13px;color:#aaa;transition:transform .2s;">▶</span>
       </div>
       <div id="changelogBody" style="display:none;padding:0 18px 16px;font-size:13px;color:#5f5e5a;line-height:1.8;border-top:1px solid #eee;">
         <div style="margin:14px 0;">
+          <strong style="color:#1a1a18;">v43</strong> <span style="color:#aaa;">— Nov 2026</span>
+          <p>• Sabato, domenica e festivi: tutte le ore diventano straordinario</p>
+          <p>• Maggiorazione sabato/festivi configurabile (default 50%)</p>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:#1a1a18;">v42</strong> <span style="color:#aaa;">— Nov 2026</span>
+          <p>• Stipendio fisso 173h/mese (ferie, permessi e malattia già compresi)</p>
+          <p>• Festività cadute di domenica e 4 novembre pagate a parte (6,65h)</p>
+          <p>• 4 ottobre (San Francesco) festa nazionale dal 2026</p>
+          <p>• Soglia esente trasferte 46,48 €/giorno</p>
+          <p>• Calcolo unico per consuntivo, preventivo e grafici: i netti coincidono</p>
+          <p>• Il preventivo elenca i giorni mancanti</p>
+        </div>
+        <div style="margin-bottom:14px;">
           <strong style="color:#1a1a18;">v41</strong> <span style="color:#aaa;">— Ott 2026</span>
           <p>• Cronistoria versioni nelle impostazioni</p>
         </div>
@@ -942,7 +958,7 @@ function fmtMese(d) {
 function db() { try { var d = localStorage.getItem(DB_KEY); return d ? JSON.parse(d) : []; } catch(e) { return []; } }
 function saveDb(d) { localStorage.setItem(DB_KEY, JSON.stringify(d)); }
 function cfg() {
-  var def = { ore_std:8, paga:10, paga_stra:12, inps:9.19, irpef:23,
+  var def = { ore_std:8, ordinario_fisso_ore:173, paga:10, paga_stra:12, inps:9.49, irpef:25.7,
     rimborso_cliente_pranzo:25, rimborso_cliente_cena:30,
     rimborso_nostro_pranzo:25, rimborso_nostro_cena:30,
     rimborso_estero_pranzo:40, rimborso_estero_cena:50,
@@ -1054,9 +1070,9 @@ function calcolaRimborsoGiornoItalia(t, cf) {
   else if(nPastiNostro === 0 && nPastiCliente === 0 && pern) tot += (cf.nostro_0p_pern||0);
   return tot;
 }
-// Soglie di esenzione fiscale CCNL Metalmeccanica (fisse, non configurabili): 15,49€ e 44,97€.
+// Soglie di esenzione fiscale (fisse, non configurabili): 15,49€ e 46,48€.
 // Ogni pacchetto ha una soglia nota; alcuni sono interamente esenti (senza soglia).
-var SOGLIA_BASSA = 15.49, SOGLIA_ALTA = 44.97;
+var SOGLIA_BASSA = 15.49, SOGLIA_ALTA = 46.48; // 46,48 = limite art. 51 TUIR, verificato su cedolino ott 2026
 function sogliaEsenzioneGiornoItalia(t) {
   if(!t || typeof t !== 'object') return { esente: 0, soglia: null };
   var pern = !!t.pernottamento;
@@ -1091,10 +1107,11 @@ function onClienteInput() {
   // se il cliente è appena stato scritto (primo carattere) e le ore sono vuote → metti default
   if(cl.length >= 1 && !ord && !stra) {
     var std = cfg().ore_std;
-    document.getElementById('fOrd').value = std.toFixed(1);
-    document.getElementById('fStra').value = '0.0';
+    var weDef = giornoNonLavorativo(document.getElementById('fData').value);
+    document.getElementById('fOrd').value = weDef ? '0.0' : std.toFixed(1);
+    document.getElementById('fStra').value = weDef ? std.toFixed(1) : '0.0';
     document.getElementById('prevCalc').style.display = 'block';
-    document.getElementById('prevCalc').textContent = 'Ore impostate di default: ' + std.toFixed(1) + 'h ordinarie';
+    document.getElementById('prevCalc').textContent = 'Ore impostate di default: ' + std.toFixed(1) + (weDef ? 'h straordinarie (sabato/festivo)' : 'h ordinarie');
   }
   // se cancella il nome → azzera le ore di default (solo se non ci sono orari inseriti)
   if(cl.length === 0) {
@@ -1252,10 +1269,12 @@ function autoCalc() {
   var prev=document.getElementById('prevCalc');
   if(tot>0){
     var std=cfg().ore_std, ord=Math.min(tot,std), stra=Math.max(0,tot-std);
+    var nonLav = giornoNonLavorativo(document.getElementById('fData').value);
+    if(nonLav){ ord=0; stra=tot; }
     document.getElementById('fOrd').value=ord.toFixed(1);
     document.getElementById('fStra').value=stra.toFixed(1);
     prev.style.display='block';
-    prev.textContent='Totale: '+tot.toFixed(1)+'h → Ordinarie: '+ord.toFixed(1)+'h   Straordinarie: '+stra.toFixed(1)+'h';
+    prev.textContent=(nonLav?'Sabato/festivo — ':'')+'Totale: '+tot.toFixed(1)+'h → Ordinarie: '+ord.toFixed(1)+'h   Straordinarie: '+stra.toFixed(1)+'h';
   } else { prev.style.display='none'; }
 }
 
@@ -1416,7 +1435,7 @@ function isFestivo(dataStr) {
   if(dow === 0 || dow === 6) return true; // sabato o domenica
   var mm = String(d.getMonth()+1).padStart(2,'0');
   var dd = String(d.getDate()).padStart(2,'0');
-  return FESTIVITA_IT.indexOf(dd+'-'+mm) !== -1;
+  return isFestivitaNazionale(dataStr); // elenco unico (include 4 ottobre dal 2026 e Pasquetta)
 }
 
 // Genera tutti i giorni lavorativi (lun-ven non festivi) di un mese
@@ -1629,92 +1648,188 @@ function resetFiltriTrasf() {
 }
 
 // ── BUSTA PAGA ──
+// ══ MOTORE BUSTA UNICO (v42) ══
+// Un solo calcolo usato da Busta (consuntivo + preventivo) e Grafici, così i numeri coincidono sempre.
+// Regole verificate sul cedolino di ottobre 2026:
+//  - lo stipendio ordinario è FISSO: 173h × paga oraria, indipendente dai giorni del mese;
+//    ferie, permessi e malattia sono già compresi nel fisso (assenza − / goduto +, si annullano)
+//  - festività nazionale caduta di DOMENICA (esclusa Pasqua) e 4 novembre (festività soppressa)
+//    → pagate a parte: 173/26 = 6,65h × paga oraria ciascuna
+//  - trasferte Italia: soglie di esenzione per giornata (calcolaFiscoGiornoItalia)
+function pasquaData(y) {
+  var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25);
+  var g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7;
+  var m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),dy=((h+l-7*m+114)%31)+1;
+  return new Date(y,mo-1,dy);
+}
+var FESTIVI_FISSI_NAZ = ['01-01','01-06','04-25','05-01','06-02','08-15','11-01','12-08','12-25','12-26'];
+// ds = 'YYYY-MM-DD'
+function isFestivitaNazionale(ds) {
+  var y = parseInt(ds.slice(0,4)), mmdd = ds.slice(5);
+  if(FESTIVI_FISSI_NAZ.indexOf(mmdd) !== -1) return true;
+  if(mmdd === '10-04' && y >= 2026) return true; // San Francesco: festa nazionale dal 2026
+  var p = pasquaData(y), pl = new Date(p); pl.setDate(p.getDate()+1);
+  return ds === fmtData(p) || ds === fmtData(pl);
+}
+// Sabato, domenica o festività nazionale → tutte le ore sono straordinario festivo
+function giornoNonLavorativo(ds) {
+  if(!ds) return false;
+  var p = ds.split('-'), dow = new Date(+p[0], +p[1]-1, +p[2]).getDay();
+  return dow === 0 || dow === 6 || isFestivitaNazionale(ds);
+}
+function pagaStraWeekend(cf) {
+  return (cf.paga || 0) * (1 + (cf.magg_stra_weekend != null ? cf.magg_stra_weekend : 50) / 100);
+}
+// Giorni lavorativi del mese (lun-ven, escluse festività nazionali)
+function giorniLavorativiBusta(meseStr) {
+  var p = meseStr.split('-'), y = parseInt(p[0]), m = parseInt(p[1])-1, out = [];
+  var ultimo = new Date(y, m+1, 0).getDate();
+  for(var g=1; g<=ultimo; g++) {
+    var ds = meseStr + '-' + String(g).padStart(2,'0');
+    var dow = new Date(y, m, g).getDay();
+    if(dow >= 1 && dow <= 5 && !isFestivitaNazionale(ds)) out.push(ds);
+  }
+  return out;
+}
+// Festività pagate a parte nel mese
+function festivitaPagateMese(meseStr) {
+  var p = meseStr.split('-'), y = parseInt(p[0]), m = parseInt(p[1])-1, out = [];
+  var pasqua = fmtData(pasquaData(y));
+  var ultimo = new Date(y, m+1, 0).getDate();
+  for(var g=1; g<=ultimo; g++) {
+    var ds = meseStr + '-' + String(g).padStart(2,'0');
+    if(ds.slice(5) === '11-04') { out.push({ data: ds, motivo: '4 novembre (festività soppressa)' }); continue; }
+    if(new Date(y, m, g).getDay() === 0 && ds !== pasqua && isFestivitaNazionale(ds))
+      out.push({ data: ds, motivo: 'festività caduta di domenica' });
+  }
+  return out;
+}
+// Giorni che risultano "inseriti" nel registro
+function giornoInserito(r) {
+  return (r.ore_tot||0)>0||(r.malattia||0)>0||(r.ferie||0)>0||(r.permessi||0)>0||(r.festivita||0)>0;
+}
+function motoreBusta(records, cf, meseStr) {
+  var r = { oreOrdReg:0, oreStra:0, oreStraWE:0, oreFerie:0, oreMal:0, orePerm:0, spese:0,
+            esenteItalia:0, tassItalia:0, ggItalia:0, rimEst:0, ggEst:0, nPastiEst:0, giorniLav:0 };
+  records.forEach(function(x){
+    if((x.ore_tot||0) > 0) r.giorniLav++;
+    if(giornoNonLavorativo(x.data)) {
+      r.oreStraWE += (x.ore_ord || 0) + (x.ore_stra || 0); // sabato/festivo: tutto straordinario
+    } else {
+      r.oreOrdReg += x.ore_ord || 0;
+      r.oreStra   += x.ore_stra || 0;
+    }
+    r.oreFerie  += x.ferie || 0;
+    r.oreMal    += x.malattia || 0;
+    r.orePerm   += x.permessi || 0;
+    r.spese     += (x.spesa_pranzo||0) + (x.spesa_cena||0);
+    var t = x.trasferte;
+    if(t && typeof t === 'object') {
+      if(t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.pernottamento) {
+        var f = calcolaFiscoGiornoItalia(t, cf);
+        r.esenteItalia += f.esente; r.tassItalia += f.tassabile; r.ggItalia++;
+      }
+      if(t.esteroPranzo||t.esteroCena) {
+        r.ggEst++;
+        r.nPastiEst += (t.esteroPranzo?1:0) + (t.esteroCena?1:0);
+        r.rimEst += (t.esteroPranzo ? (cf.rimborso_estero_pranzo||0) : 0) + (t.esteroCena ? (cf.rimborso_estero_cena||0) : 0);
+      }
+    }
+  });
+  r.rimItalia = r.esenteItalia + r.tassItalia;
+  // Estero: resta sul tetto piatto delle impostazioni
+  var tetto = cf.tetto_trasferte || 40;
+  r.esenteEst = r.ggEst > 0 ? Math.min(r.rimEst / r.ggEst, tetto) * r.ggEst : 0;
+  r.tassEst   = Math.max(0, r.rimEst - r.esenteEst);
+  r.totTrasf  = r.rimItalia + r.rimEst;
+  r.esente    = r.esenteItalia + r.esenteEst;
+  r.tassabile = r.tassItalia + r.tassEst;
+
+  r.oreFisse  = cf.ordinario_fisso_ore || 173;
+  r.impFisso  = r.oreFisse * (cf.paga || 0);
+  r.festivita = meseStr ? festivitaPagateMese(meseStr) : [];
+  r.oreFestUna = Math.round(r.oreFisse / 26 * 100) / 100; // 6,65h
+  r.oreFest   = r.festivita.length * r.oreFestUna;
+  r.impFest   = r.oreFest * (cf.paga || 0);
+  r.impStra   = r.oreStra * (cf.paga_stra || 0);
+  r.pagaStraWE = pagaStraWeekend(cf);
+  r.impStraWE = r.oreStraWE * r.pagaStraWE;
+
+  r.lordo     = r.impFisso + r.impFest + r.impStra + r.impStraWE + r.tassabile; // lordo imponibile (senza quota esente)
+  r.inps      = r.lordo * ((cf.inps || 0) / 100);
+  r.irpef     = (r.lordo - r.inps) * ((cf.irpef || 0) / 100);
+  r.addizReg  = cf.addiz_regionale || 0;
+  r.addizCom  = cf.addiz_comunale  || 0;
+  r.netto     = r.lordo - r.inps - r.irpef - r.addizReg - r.addizCom + r.esente;
+  // valore netto di 1 ora di straordinario (per il preventivo)
+  r.nettoOraStra = (cf.paga_stra||0) * (1 - (cf.inps||0)/100) * (1 - (cf.irpef||0)/100);
+  return r;
+}
+function fmtGiornoBreve(ds) {
+  var gg = ['dom','lun','mar','mer','gio','ven','sab'];
+  var p = ds.split('-');
+  return gg[new Date(+p[0], +p[1]-1, +p[2]).getDay()] + ' ' + p[2] + '/' + p[1];
+}
+// Blocco preventivo (HTML) — condiviso tra Busta e Grafici
+function preventivoHtml(meseStr, cf, records, m) {
+  var oggi = new Date(), oggiS = fmtData(oggi);
+  var p = meseStr.split('-'), y = parseInt(p[0]), mm = parseInt(p[1])-1;
+  var meseCorr = oggi.getFullYear() === y && oggi.getMonth() === mm;
+  var meseFut  = y > oggi.getFullYear() || (y === oggi.getFullYear() && mm > oggi.getMonth());
+  var lav = giorniLavorativiBusta(meseStr);
+  var inseriti = {};
+  records.forEach(function(r){ if(r.data && giornoInserito(r)) inseriti[r.data] = true; });
+  var mancanti = lav.filter(function(d){ return !inseriti[d] && (!meseCorr || d < oggiS); });
+  var rimanenti = meseCorr ? lav.filter(function(d){ return d >= oggiS && !inseriti[d]; }) : [];
+  var nota = '<div style="font-size:11px;color:#9a7010;margin-top:6px">Lo stipendio è fisso (' + m.oreFisse + 'h): i giorni mancanti <b>non cambiano il netto</b>, possono solo aggiungere straordinari e trasferte.</div>';
+  var html = '';
+
+  if(meseFut) {
+    return '<div style="background:#e6f1fb;border-radius:10px;padding:14px 16px">' +
+      '<div style="font-size:11px;font-weight:600;color:#185fa5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Previsione mese futuro</div>' +
+      '<div class="stats" style="margin-bottom:8px">' +
+        '<div class="stat"><div class="stat-l">Giorni lav.</div><div class="stat-v">' + lav.length + '</div></div>' +
+        '<div class="stat"><div class="stat-l">Netto base</div><div class="stat-v" style="color:#185fa5">' + m.netto.toFixed(2) + ' €</div></div>' +
+      '</div>' +
+      '<div style="font-size:11px;color:#5f8ab4">Stipendio fisso' + (m.festivita.length ? ' + festività' : '') + '. Ogni ora di straordinario aggiunge circa ' + m.nettoOraStra.toFixed(2) + ' € netti, più le trasferte.</div>' +
+    '</div>';
+  }
+
+  if(mancanti.length) {
+    html += '<div style="background:#fff8e1;border:1.5px solid #f5c842;border-radius:10px;padding:14px 16px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start">' +
+      '<span style="font-size:20px">⚠️</span><div>' +
+        '<div style="font-weight:600;font-size:13px;color:#7a5700;margin-bottom:4px">' + mancanti.length + ' giorn' + (mancanti.length===1?'o':'i') + ' lavorativ' + (mancanti.length===1?'o':'i') + ' non inserit' + (mancanti.length===1?'o':'i') + '</div>' +
+        '<div style="font-size:12px;color:#7a5700">' + mancanti.map(fmtGiornoBreve).join(', ') + '</div>' +
+        nota +
+      '</div></div>';
+  } else if(!meseCorr) {
+    html += '<div style="text-align:center;padding:12px;color:#3b6d11;font-size:13px;">✅ Mese completo — tutti i giorni lavorativi sono inseriti.</div>';
+  }
+
+  if(meseCorr) {
+    html += '<div style="background:#f9f8f5;border-radius:10px;padding:14px 16px;margin-bottom:10px">' +
+      '<div class="stats" style="margin-bottom:0">' +
+        '<div class="stat"><div class="stat-l">Giorni inseriti</div><div class="stat-v">' + Object.keys(inseriti).length + '</div></div>' +
+        '<div class="stat"><div class="stat-l">Rimanenti</div><div class="stat-v">' + rimanenti.length + '</div></div>' +
+      '</div></div>' +
+      '<div style="background:#1a1a18;border-radius:10px;padding:16px 18px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+          '<span style="color:#f5f4f0;font-weight:600;font-size:14px">Netto a fine mese (minimo)</span>' +
+          '<span style="color:#f5c842;font-size:20px;font-weight:700">' + m.netto.toFixed(2) + ' €</span>' +
+        '</div>' +
+        '<div style="font-size:11px;color:#aaa;margin-top:8px">Stipendio fisso + straordinari e trasferte già inseriti. Ogni ora di straordinario in più ≈ +' + m.nettoOraStra.toFixed(2) + ' € netti.</div>' +
+      '</div>';
+  }
+  return html;
+}
+
 function calcolaBusta() {
   var mese = document.getElementById('bustaMese').value;
   if(!mese) return;
   var records = db().filter(function(r){ return r.manuale && r.data && r.data.startsWith(mese); });
   var cf = cfg();
-
-  var totOrd=0, totStra=0, totAssenze=0, totPermessi=0, spP=0, spC=0;
-  var cP=0, cC=0, nP=0, nC=0, eP=0, eC=0;
-  var giorniLav=0;
-
-  records.forEach(function(r){
-    var oreTot = r.ore_tot || 0;
-    if(oreTot > 0) giorniLav++;
-
-    totOrd  += r.ore_ord  || 0;
-    totStra += r.ore_stra || 0;
-    totAssenze += (r.malattia||0) + (r.ferie||0);
-    totPermessi+= r.permessi || 0;
-    spP        += r.spesa_pranzo || 0;
-    spC        += r.spesa_cena   || 0;
-    var t = r.trasferte;
-    if(t && typeof t === 'object') {
-      if(t.clientePranzo) cP++; if(t.clienteCena) cC++;
-      if(t.nostroPranzo)  nP++; if(t.nostroCena)  nC++;
-      if(t.esteroPranzo)  eP++; if(t.esteroCena)  eC++;
-    } else if(typeof t === 'number' && t > 0) {
-      nP++;
-    }
-  });
-
-  // ── Calcolo rimborsi trasferte con soglie fiscali reali (CCNL) per singola giornata ──
-  // Rimborso lordo ITALIA: calcolato per giornata con il sistema a pacchetto (pasti + pernottamento)
-  var rimItalia = 0;
-  var esenteItalia = 0, tassabileItalia = 0;
-  var giorniConTrasfItalia = 0;
-  records.forEach(function(r){
-    var t = r.trasferte;
-    if(t && typeof t === 'object') {
-      var giornoHaItalia = t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.pernottamento;
-      if(giornoHaItalia) {
-        var fisco = calcolaFiscoGiornoItalia(t, cf);
-        rimItalia += fisco.esente + fisco.tassabile;
-        esenteItalia += fisco.esente;
-        tassabileItalia += fisco.tassabile;
-        giorniConTrasfItalia++;
-      }
-    }
-  });
-  var rimEstP = eP * (cf.rimborso_estero_pranzo||0);
-  var rimEstC = eC * (cf.rimborso_estero_cena||0);
-
-  var rimEst = rimEstP + rimEstC;
-  var totTrasf = rimItalia + rimEst;
-  var nTrasf = cP + cC + nP + nC + eP + eC;
-
-  // Numero giorni con almeno una trasferta (Italia o estero)
-  var tetto = cf.tetto_trasferte || 40; // usato solo per la quota estero (non ancora migrata alle soglie CCNL)
-  var giorniConTrasf = giorniConTrasfItalia + records.filter(function(r){
-    var t = r.trasferte;
-    if(!t || typeof t !== 'object') return false;
-    return t.esteroPranzo||t.esteroCena;
-  }).length;
-  var giorniEstero = giorniConTrasf - giorniConTrasfItalia;
-
-  // Estero: resta sul vecchio tetto piatto finché non si mappano le soglie estero specifiche
-  var esenteEstero = giorniEstero > 0 ? Math.min(rimEst / giorniEstero, tetto) * giorniEstero : 0;
-  var tassabileEstero = Math.max(0, rimEst - esenteEstero);
-
-  var totEsente     = esenteItalia + esenteEstero;
-  var totTassabile  = tassabileItalia + tassabileEstero;
-
-  // importi
-  var impOrd  = totOrd      * (cf.paga      || 0);
-  var impStra = totStra     * (cf.paga_stra || 0);
-  var impAss  = totAssenze  * (cf.paga      || 0);
-  var impPerm = totPermessi * (cf.paga      || 0);
-  // Il lordo include le trasferte tassabili (le esenti non concorrono al reddito)
-  var lordo   = impOrd + impStra + impAss + impPerm + totTassabile;
-  var inps    = lordo * ((cf.inps  || 0) / 100);
-  var irpef   = (lordo - inps) * ((cf.irpef || 0) / 100);
-  var addizReg = cf.addiz_regionale || 0;
-  var addizCom = cf.addiz_comunale  || 0;
-  var addizTot = addizReg + addizCom; // trattenute mensili fisse (dalla busta)
-  var netto   = lordo - inps - irpef - addizTot + totEsente; // aggiungi le esenti al netto finale
-  var spese   = spP + spC;
-  var nettoSpese = netto - spese;
+  var m = motoreBusta(records, cf, mese);
+  var paga = cf.paga || 0;
 
   var mesiNomi = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
   var mp = mese.split('-');
@@ -1733,67 +1848,70 @@ function calcolaBusta() {
 
   if(mesiTrimestre.length > 0 && (cf.premio_produttivita||0) > 0) {
     var allRecords = db().filter(function(r){ return r.manuale && r.data; });
-    mesiTrimestre.forEach(function(m){
-      var recs = allRecords.filter(function(r){ return r.data.startsWith(m); });
+    mesiTrimestre.forEach(function(mm){
+      var recs = allRecords.filter(function(r){ return r.data.startsWith(mm); });
       var oreM = recs.reduce(function(s,r){ return s+(r.ore_ord||0)+(r.ore_stra||0); }, 0);
       premioProdOre += oreM;
-      premioMesi.push({ mese: mesiNomi[parseInt(m.split('-')[1])-1], ore: oreM });
+      premioMesi.push({ mese: mesiNomi[parseInt(mm.split('-')[1])-1], ore: oreM });
     });
     premioProdImporto = premioProdOre * (cf.premio_produttivita||0);
-    // Il premio è parte del lordo tassabile in busta: va tassato con le stesse aliquote INPS+IRPEF
     var premioDopoInps = premioProdImporto * (1 - ((cf.inps || 0) / 100));
     premioProdNetto = premioDopoInps * (1 - ((cf.irpef || 0) / 100));
   }
 
-  document.getElementById('bustaRisultato').innerHTML =
-    '<div style="font-size:13px;color:#888780;margin-bottom:14px;font-weight:500">Riepilogo ' + meseLbl + ' — ' + giorniLav + ' giorni lavorati</div>' +
+  var oreAssenze = m.oreFerie + m.orePerm + m.oreMal;
+  var nettoSpese = m.netto - m.spese;
 
-    '<div class="sec-lbl">Dettaglio ore</div>' +
+  document.getElementById('bustaRisultato').innerHTML =
+    '<div style="font-size:13px;color:#888780;margin-bottom:14px;font-weight:500">Riepilogo ' + meseLbl + ' — ' + m.giorniLav + ' giorni lavorati</div>' +
+
+    '<div class="sec-lbl">Dettaglio ore (dal registro)</div>' +
     '<div class="stats" style="margin-bottom:14px">' +
-      '<div class="stat"><div class="stat-l">Ore ord.</div><div class="stat-v">' + totOrd.toFixed(1) + 'h</div><div class="stat-s">' + impOrd.toFixed(2) + ' €</div></div>' +
-      '<div class="stat"><div class="stat-l">Straord.</div><div class="stat-v">' + totStra.toFixed(1) + 'h</div><div class="stat-s">' + impStra.toFixed(2) + ' €</div></div>' +
-      (totAssenze > 0 ? '<div class="stat"><div class="stat-l">Assenze</div><div class="stat-v">' + totAssenze.toFixed(0) + 'h</div><div class="stat-s">' + impAss.toFixed(2) + ' €</div></div>' : '') +
-      (totPermessi > 0 ? '<div class="stat"><div class="stat-l">Permessi</div><div class="stat-v">' + totPermessi.toFixed(1) + 'h</div><div class="stat-s">' + impPerm.toFixed(2) + ' €</div></div>' : '') +
+      '<div class="stat"><div class="stat-l">Ore ord.</div><div class="stat-v">' + m.oreOrdReg.toFixed(1) + 'h</div></div>' +
+      '<div class="stat"><div class="stat-l">Straord.</div><div class="stat-v">' + m.oreStra.toFixed(1) + 'h</div><div class="stat-s">' + m.impStra.toFixed(2) + ' €</div></div>' +
+      (m.oreStraWE > 0 ? '<div class="stat"><div class="stat-l">Sab./festivi</div><div class="stat-v">' + m.oreStraWE.toFixed(1) + 'h</div><div class="stat-s">' + m.impStraWE.toFixed(2) + ' €</div></div>' : '') +
+      (oreAssenze > 0 ? '<div class="stat"><div class="stat-l">Ferie/perm./mal.</div><div class="stat-v">' + oreAssenze.toFixed(1) + 'h</div><div class="stat-s">già nel fisso</div></div>' : '') +
     '</div>' +
 
-    (nTrasf > 0 ?
+    (m.totTrasf > 0 ?
       '<div class="sec-lbl">Trasferte</div>' +
       '<div class="stats" style="margin-bottom:8px">' +
-        (giorniConTrasfItalia ? '<div class="stat"><div class="stat-l">Italia</div><div class="stat-v">' + giorniConTrasfItalia + ' gg</div><div class="stat-s">' + rimItalia.toFixed(2) + ' €</div></div>' : '') +
-        (eP||eC ? '<div class="stat"><div class="stat-l">Estero</div><div class="stat-v">' + (eP+eC) + '</div><div class="stat-s">' + rimEst.toFixed(2) + ' €</div></div>' : '') +
+        (m.ggItalia ? '<div class="stat"><div class="stat-l">Italia</div><div class="stat-v">' + m.ggItalia + ' gg</div><div class="stat-s">' + m.rimItalia.toFixed(2) + ' €</div></div>' : '') +
+        (m.ggEst ? '<div class="stat"><div class="stat-l">Estero</div><div class="stat-v">' + m.nPastiEst + '</div><div class="stat-s">' + m.rimEst.toFixed(2) + ' €</div></div>' : '') +
       '</div>' +
-      '<div class="res-row"><span>Totale rimborsi trasferte</span><span><b>' + totTrasf.toFixed(2) + ' €</b></span></div>' +
+      '<div class="res-row"><span>Totale rimborsi trasferte</span><span><b>' + m.totTrasf.toFixed(2) + ' €</b></span></div>' +
       '<div style="background:#eaf3de;border-radius:8px;padding:10px 14px;margin:6px 0;display:flex;justify-content:space-between;align-items:center">' +
-        '<span style="font-size:13px;color:#3b6d11"><b>Tax 0%</b> &nbsp;Quota esente (soglie CCNL)</span>' +
-        '<span style="font-size:14px;font-weight:700;color:#3b6d11">' + totEsente.toFixed(2) + ' €</span>' +
+        '<span style="font-size:13px;color:#3b6d11"><b>Tax 0%</b> &nbsp;Quota esente</span>' +
+        '<span style="font-size:14px;font-weight:700;color:#3b6d11">' + m.esente.toFixed(2) + ' €</span>' +
       '</div>' +
-      (totTassabile > 0 ?
+      (m.tassabile > 0 ?
         '<div style="background:#faeeda;border-radius:8px;padding:10px 14px;margin:6px 0;display:flex;justify-content:space-between;align-items:center">' +
-          '<span style="font-size:13px;color:#854f0b"><b>Tassata</b> &nbsp;Eccedenza soglia CCNL</span>' +
-          '<span style="font-size:14px;font-weight:700;color:#854f0b">' + totTassabile.toFixed(2) + ' €</span>' +
+          '<span style="font-size:13px;color:#854f0b"><b>Tassata</b> &nbsp;Eccedenza soglia</span>' +
+          '<span style="font-size:14px;font-weight:700;color:#854f0b">' + m.tassabile.toFixed(2) + ' €</span>' +
         '</div>'
       : '') +
       '<div style="height:4px"></div>'
     : '') +
 
     '<div class="sec-lbl">Calcolo stipendio</div>' +
-    '<div class="res-row"><span>Ore ordinarie (' + totOrd.toFixed(1) + 'h × ' + (cf.paga||0).toFixed(2) + ' €)</span><span>' + impOrd.toFixed(2) + ' €</span></div>' +
-    (totStra > 0 ? '<div class="res-row"><span>Straordinari (' + totStra.toFixed(1) + 'h × ' + (cf.paga_stra||0).toFixed(2) + ' €)</span><span>' + impStra.toFixed(2) + ' €</span></div>' : '') +
-    (totAssenze > 0 ? '<div class="res-row"><span>Assenze (' + totAssenze.toFixed(0) + 'h)</span><span>' + impAss.toFixed(2) + ' €</span></div>' : '') +
-    (totPermessi > 0 ? '<div class="res-row"><span>Permessi (' + totPermessi.toFixed(1) + 'h)</span><span>' + impPerm.toFixed(2) + ' €</span></div>' : '') +
-    (nTrasf > 0 ? '<div class="res-row"><span>Rimborsi trasferte</span><span>' + totTrasf.toFixed(2) + ' €</span></div>' : '') +
-    '<div class="res-row" style="border-top:1.5px solid #e0e0e0;margin-top:6px;padding-top:10px"><span><b>Totale Lordo</b></span><span><b>' + lordo.toFixed(2) + ' €</b></span></div>' +
-    '<div class="res-row"><span>INPS (' + (cf.inps||0) + '%)</span><span style="color:#a32d2d">− ' + inps.toFixed(2) + ' €</span></div>' +
-    '<div class="res-row"><span>IRPEF (' + (cf.irpef||0) + '%)</span><span style="color:#a32d2d">− ' + irpef.toFixed(2) + ' €</span></div>' +
-    (addizReg > 0 ? '<div class="res-row"><span>Add. regionale</span><span style="color:#a32d2d">− ' + addizReg.toFixed(2) + ' €</span></div>' : '') +
-    (addizCom > 0 ? '<div class="res-row"><span>Add. comunale</span><span style="color:#a32d2d">− ' + addizCom.toFixed(2) + ' €</span></div>' : '') +
-    '<div class="busta-highlight" style="margin-top:10px"><div class="res-row" style="border:none"><span><b>Stimato Netto in Busta</b></span><span><b>' + netto.toFixed(2) + ' €</b></span></div></div>' +
+    '<div class="res-row"><span>Stipendio fisso (' + m.oreFisse + 'h × ' + paga.toFixed(2) + ' €)</span><span>' + m.impFisso.toFixed(2) + ' €</span></div>' +
+    (m.festivita.length ? '<div class="res-row"><span>Festività non godute (' + m.festivita.length + ' × ' + m.oreFestUna.toFixed(2) + 'h)<br><small style="color:#888780">' + m.festivita.map(function(f){ return fmtGiornoBreve(f.data) + ' – ' + f.motivo; }).join('<br>') + '</small></span><span>' + m.impFest.toFixed(2) + ' €</span></div>' : '') +
+    (m.oreStra > 0 ? '<div class="res-row"><span>Straordinari (' + m.oreStra.toFixed(1) + 'h × ' + (cf.paga_stra||0).toFixed(2) + ' €)</span><span>' + m.impStra.toFixed(2) + ' €</span></div>' : '') +
+    (m.oreStraWE > 0 ? '<div class="res-row"><span>Straord. sabato/festivi (' + m.oreStraWE.toFixed(1) + 'h × ' + m.pagaStraWE.toFixed(2) + ' €)</span><span>' + m.impStraWE.toFixed(2) + ' €</span></div>' : '') +
+    (m.tassabile > 0 ? '<div class="res-row"><span>Trasferte tassate</span><span>' + m.tassabile.toFixed(2) + ' €</span></div>' : '') +
+    '<div class="res-row" style="border-top:1.5px solid #e0e0e0;margin-top:6px;padding-top:10px"><span><b>Totale Lordo imponibile</b></span><span><b>' + m.lordo.toFixed(2) + ' €</b></span></div>' +
+    '<div class="res-row"><span>INPS (' + (cf.inps||0) + '%)</span><span style="color:#a32d2d">− ' + m.inps.toFixed(2) + ' €</span></div>' +
+    '<div class="res-row"><span>IRPEF (' + (cf.irpef||0) + '%)</span><span style="color:#a32d2d">− ' + m.irpef.toFixed(2) + ' €</span></div>' +
+    (m.addizReg > 0 ? '<div class="res-row"><span>Add. regionale</span><span style="color:#a32d2d">− ' + m.addizReg.toFixed(2) + ' €</span></div>' : '') +
+    (m.addizCom > 0 ? '<div class="res-row"><span>Add. comunale</span><span style="color:#a32d2d">− ' + m.addizCom.toFixed(2) + ' €</span></div>' : '') +
+    (m.esente > 0 ? '<div class="res-row"><span>Trasferte esenti</span><span style="color:#3b6d11">+ ' + m.esente.toFixed(2) + ' €</span></div>' : '') +
+    '<div class="busta-highlight" style="margin-top:10px"><div class="res-row" style="border:none"><span><b>Stimato Netto in Busta</b></span><span><b>' + m.netto.toFixed(2) + ' €</b></span></div></div>' +
 
     (premioProdImporto > 0 ?
       '<div style="background:#f0f7e6;border:1.5px solid #7cb342;border-radius:10px;padding:14px 16px;margin-top:12px">' +
         '<div style="font-size:11px;font-weight:700;color:#3b6d11;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">🏆 Premio Produttività Trimestrale</div>' +
         '<div style="font-size:12px;color:#5f5e5a;margin-bottom:8px">' +
-          premioMesi.map(function(m){ return m.mese+': <b>'+m.ore.toFixed(1)+'h</b>'; }).join(' &nbsp;·&nbsp; ') +
+          premioMesi.map(function(x){ return x.mese+': <b>'+x.ore.toFixed(1)+'h</b>'; }).join(' &nbsp;·&nbsp; ') +
         '</div>' +
         '<div class="res-row" style="border-color:#c5e1a5"><span>Ore totali trimestre</span><span><b>' + premioProdOre.toFixed(1) + 'h</b></span></div>' +
         '<div class="res-row" style="border-color:#c5e1a5"><span>Premio lordo ('+premioProdOre.toFixed(1)+'h × '+(cf.premio_produttivita||0).toFixed(2)+' €)</span><span><b>' + premioProdImporto.toFixed(2) + ' €</b></span></div>' +
@@ -1802,304 +1920,34 @@ function calcolaBusta() {
         '<div style="font-size:10.5px;color:#7a7c82;margin-top:6px;line-height:1.4">Ore = ord. + straord. (no ferie/permessi/festività). Non include ore viaggio (non tracciate in app) — la busta reale può essere leggermente più alta.</div>' +
         '<div style="border-top:1px solid #a5d6a7;margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">' +
           '<span style="font-weight:700;color:#1a1a18;font-size:14px">Netto + Premio</span>' +
-          '<span style="font-weight:700;color:#3b6d11;font-size:18px">' + (netto + premioProdNetto).toFixed(2) + ' €</span>' +
+          '<span style="font-weight:700;color:#3b6d11;font-size:18px">' + (m.netto + premioProdNetto).toFixed(2) + ' €</span>' +
         '</div>' +
       '</div>'
     : '') +
-    (spese > 0 ?
-      '<div class="res-row" style="margin-top:10px"><span>Spese pasto effettive (pranzo+cena)</span><span style="color:#a32d2d">− ' + spese.toFixed(2) + ' €</span></div>' +
+    (m.spese > 0 ?
+      '<div class="res-row" style="margin-top:10px"><span>Spese pasto effettive (pranzo+cena)</span><span style="color:#a32d2d">− ' + m.spese.toFixed(2) + ' €</span></div>' +
       '<div class="busta-final"><div class="res-row" style="border:none"><span><b>Netto − Spese</b></span><span><b>' + nettoSpese.toFixed(2) + ' €</b></span></div></div>'
     : '') +
-    (lordo === 0 ? '<div class="empty">Nessun dato per questo mese.<br>Verifica le impostazioni (paga oraria, ecc.)</div>' : '');
+    (paga === 0 ? '<div class="empty">Verifica le impostazioni (paga oraria, ecc.)</div>' : '');
 
   // ── SEZIONE PREVENTIVO ──
-  calcolaPreventivo(mese, cf, totOrd, totStra, cP, cC, nP, nC, eP, eC, totAssenze, totPermessi, records);
+  calcolaPreventivo(mese, cf, records, m);
 }
 
-function calcolaPreventivo(mese, cf, oreOrdGia, oreStraGia, cP, cC, nP, nC, eP, eC, assenzeGia, permessiGia, records) {
-  var oggi = new Date();
-  var addizReg = cf.addiz_regionale || 0;
-  var addizCom = cf.addiz_comunale  || 0;
-  var addizTot = addizReg + addizCom; // trattenute mensili fisse (dalla busta)
-  var mp = mese.split('-');
-  var annoMese = parseInt(mp[0]), meseMese = parseInt(mp[1]) - 1;
-  var meseCorrente = (oggi.getFullYear() === annoMese && oggi.getMonth() === meseMese);
-
-  // giorni lavorativi totali del mese (lun-ven, esclusi festivi nazionali)
-  var FESTIVI_FISSI_B = ['01-01','01-06','04-25','05-01','06-02','08-15','11-01','12-08','12-25','12-26'];
-  function getEasterB(year) {
-    var a=year%19,b=Math.floor(year/100),c=year%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25);
-    var g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7;
-    var m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;
-    return new Date(year,month-1,day);
-  }
-  var easterB = getEasterB(annoMese);
-  var easterBStr = fmtData(easterB);
-  var easterMondayB = new Date(easterB); easterMondayB.setDate(easterB.getDate()+1);
-  var easterMondayBStr = fmtData(easterMondayB);
-  function isFestivoBusta(dateStr) {
-    var mmdd = dateStr.slice(5);
-    if(FESTIVI_FISSI_B.indexOf(mmdd) !== -1) return true;
-    if(dateStr === easterBStr || dateStr === easterMondayBStr) return true;
-    return false;
-  }
-
-  var totLavMese = 0, rimanenti = 0;
-  var ultimo = new Date(annoMese, meseMese + 1, 0).getDate();
-  for(var g = 1; g <= ultimo; g++) {
-    var dataStr = annoMese + '-' + String(meseMese+1).padStart(2,'0') + '-' + String(g).padStart(2,'0');
-    var gg = new Date(annoMese, meseMese, g).getDay();
-    if(gg >= 1 && gg <= 5 && !isFestivoBusta(dataStr)) {
-      totLavMese++;
-      if(meseCorrente && new Date(annoMese, meseMese, g) > oggi) rimanenti++;
-    }
-  }
-  // se mese passato → rimanenti = 0, se futuro → tutti rimanenti
-  if(!meseCorrente) {
-    rimanenti = (annoMese > oggi.getFullYear() || (annoMese === oggi.getFullYear() && meseMese > oggi.getMonth())) ? totLavMese : 0;
-  }
-
-  // giorni lavorativi effettivamente registrati nel DB per questo mese
-  var giorniGia = records.filter(function(r){
-    return (r.ore_tot||0) > 0 || (r.malattia||0) > 0 || (r.ferie||0) > 0 || (r.permessi||0) > 0 || (r.festivita||0) > 0;
-  }).length;
-
-  // giorni rimanenti = totale lun-ven del mese - giorni già registrati
-  var giorniRimanenti = Math.max(0, totLavMese - giorniGia);
-
-  // Ore stimate per i giorni RIMANENTI (solo lun-ven, 8h std)
-  var oreRimanenti = giorniRimanenti * (cf.ore_std || 8);
-  var mediaCP = giorniGia > 0 ? cP / giorniGia : 0;
-  var mediaNP = giorniGia > 0 ? nP / giorniGia : 0;
-  var mediaNC = giorniGia > 0 ? nC / giorniGia : 0;
-  var mediaEP = giorniGia > 0 ? eP / giorniGia : 0;
-
-  // Trasferte stimate per i giorni rimanenti
-  var rimStimati = (Math.round(mediaCP * giorniRimanenti) * (cf.rimborso_cliente_pranzo||0)) +
-                   (Math.round(mediaNP * giorniRimanenti) * (cf.rimborso_nostro_pranzo||0)) +
-                   (Math.round(mediaNC * giorniRimanenti) * (cf.rimborso_nostro_cena||0)) +
-                   (Math.round(mediaEP * giorniRimanenti) * (cf.rimborso_estero_pranzo||0));
-
-  // Importi SOLO delle ore/trasferte rimanenti stimate
-  var impOrdRim   = oreRimanenti * (cf.paga || 0);
-  var lordoRim    = impOrdRim + rimStimati;
-  var inpsRim     = lordoRim * ((cf.inps  || 0) / 100);
-  var irpefRim    = (lordoRim - inpsRim) * ((cf.irpef || 0) / 100);
-  var nettoRim    = lordoRim - inpsRim - irpefRim;
-
-  // Totale a fine mese = consuntivo già calcolato + stima rimanente
-  // (il consuntivo viene passato già calcolato in calcolaBusta)
-  // Per mostrare il totale, recuperiamo il netto del consuntivo dal DOM
-  var nettoPrev = nettoRim; // mostriamo solo il contributo dei giorni rimanenti
-
+function calcolaPreventivo(mese, cf, records, m) {
   var el = document.getElementById('bustaPreventivo');
   if(!el) return;
-
-  var fineDelMese = new Date(annoMese, meseMese + 1, 0);
-  var mesePasato  = oggi > fineDelMese;
-  var meseFuturo  = (annoMese > oggi.getFullYear() || (annoMese === oggi.getFullYear() && meseMese > oggi.getMonth()));
-
-  // ── MESE PASSATO ──
-  if(mesePasato) {
-    if(giorniRimanenti <= 0) {
-      el.innerHTML = '<div style="text-align:center;padding:16px;color:#3b6d11;font-size:14px;">✅ Mese completato — tutti i giorni lavorativi sono stati inseriti.</div>';
-      return;
-    }
-    // Giorni mancanti: calcola stima
-    var oreStdMancanti = giorniRimanenti * (cf.ore_std || 8);
-    var impOrdMancanti = oreStdMancanti * (cf.paga || 0);
-
-    var impOrdGia2  = oreOrdGia  * (cf.paga      || 0);
-    var impStraGia2 = oreStraGia * (cf.paga_stra || 0);
-    var impAssGia2  = assenzeGia * (cf.paga      || 0);
-    var impPermGia2 = permessiGia* (cf.paga      || 0);
-    var rimGiaTot   = (cP*(cf.rimborso_cliente_pranzo||0))+(cC*(cf.rimborso_cliente_cena||0))+
-                      (nP*(cf.rimborso_nostro_pranzo||0)) +(nC*(cf.rimborso_nostro_cena||0))+
-                      (eP*(cf.rimborso_estero_pranzo||0)) +(eC*(cf.rimborso_estero_cena||0));
-    var tetto2 = cf.tetto_trasferte || 40;
-    var giorniConTrasf2 = records.filter(function(r){
-      var t=r.trasferte; if(!t) return false;
-      if(typeof t==='number') return t>0;
-      return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena;
-    }).length;
-    var esente2    = giorniConTrasf2 > 0 ? Math.min(rimGiaTot/giorniConTrasf2, tetto2)*giorniConTrasf2 : 0;
-    var tassabile2 = Math.max(0, rimGiaTot - esente2);
-    var lordoGia2  = impOrdGia2 + impStraGia2 + impAssGia2 + impPermGia2 + tassabile2;
-    var inpsGia2   = lordoGia2 * ((cf.inps||0)/100);
-    var irpefGia2  = (lordoGia2 - inpsGia2) * ((cf.irpef||0)/100);
-    var nettoGia2  = lordoGia2 - inpsGia2 - irpefGia2 + esente2;
-
-    var lordoTotM  = lordoGia2 + impOrdMancanti;
-    var inpsTotM   = lordoTotM * ((cf.inps||0)/100);
-    var irpefTotM  = (lordoTotM - inpsTotM) * ((cf.irpef||0)/100);
-    var nettoTotM  = lordoTotM - inpsTotM - irpefTotM - addizTot + esente2;
-
-    el.innerHTML =
-      '<div style="background:#fff8e1;border:1.5px solid #f5c842;border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start">' +
-        '<span style="font-size:20px">⚠️</span>' +
-        '<div>' +
-          '<div style="font-weight:600;font-size:13px;color:#7a5700;margin-bottom:4px">Mese incompleto — ' + giorniRimanenti + ' giorn' + (giorniRimanenti===1?'o':'i') + ' lavorativ' + (giorniRimanenti===1?'o':'i') + ' non inserit' + (giorniRimanenti===1?'o':'i') + '</div>' +
-          '<div style="font-size:12px;color:#9a7010">Il consuntivo sopra si basa sui ' + giorniGia + ' giorni registrati.<br>Sotto trovi una stima con i ' + giorniRimanenti + ' giorni mancanti a <b>' + (cf.ore_std||8) + 'h/giorno</b>.</div>' +
-        '</div>' +
-      '</div>' +
-      '<div style="background:#f9f8f5;border-radius:10px;padding:14px 16px;margin-bottom:10px">' +
-        '<div style="font-size:11px;font-weight:600;color:#5f5e5a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Già inserito (' + giorniGia + ' giorni)</div>' +
-        '<div class="stats" style="margin-bottom:0">' +
-          '<div class="stat"><div class="stat-l">Ore inserite</div><div class="stat-v">' + (oreOrdGia+oreStraGia).toFixed(1) + 'h</div></div>' +
-          '<div class="stat"><div class="stat-l">Netto reale</div><div class="stat-v" style="color:#3b6d11">' + nettoGia2.toFixed(2) + ' €</div></div>' +
-        '</div>' +
-      '</div>' +
-      '<div style="background:#fff3cd;border-radius:10px;padding:14px 16px;margin-bottom:10px;border:1px dashed #f5c842">' +
-        '<div style="font-size:11px;font-weight:600;color:#7a5700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">+ Giorni mancanti stimati (' + giorniRimanenti + ' × ' + (cf.ore_std||8) + 'h)</div>' +
-        '<div class="stats" style="margin-bottom:0">' +
-          '<div class="stat"><div class="stat-l">Ore stimate</div><div class="stat-v">' + oreStdMancanti.toFixed(0) + 'h</div></div>' +
-          '<div class="stat"><div class="stat-l">Importo stimato</div><div class="stat-v">' + impOrdMancanti.toFixed(2) + ' €</div></div>' +
-        '</div>' +
-      '</div>' +
-      '<div style="background:#1a1a18;border-radius:10px;padding:16px 18px">' +
-        '<div style="font-size:11px;font-weight:600;color:#888780;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Totale mese stimato</div>' +
-        '<div class="res-row" style="border-color:#333"><span style="color:#aaa">Lordo totale</span><span style="color:#f5f4f0"><b>' + lordoTotM.toFixed(2) + ' €</b></span></div>' +
-        '<div class="res-row" style="border-color:#333"><span style="color:#a87">INPS (' + (cf.inps||0) + '%)</span><span style="color:#e09090">− ' + inpsTotM.toFixed(2) + ' €</span></div>' +
-        '<div class="res-row" style="border-color:#333"><span style="color:#a87">IRPEF (' + (cf.irpef||0) + '%)</span><span style="color:#e09090">− ' + irpefTotM.toFixed(2) + ' €</span></div>' +
-        (addizTot > 0 ? '<div class="res-row" style="border-color:#333"><span style="color:#a87">Addizionali (reg.+com.)</span><span style="color:#e09090">− ' + addizTot.toFixed(2) + ' €</span></div>' : '') +
-        '<div style="border-top:1px solid #444;margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">' +
-          '<span style="color:#f5f4f0;font-weight:600;font-size:14px">Netto stimato totale</span>' +
-          '<span style="color:#f5c842;font-size:20px;font-weight:700">' + nettoTotM.toFixed(2) + ' €</span>' +
-        '</div>' +
-      '</div>' +
-      '<div style="font-size:11px;color:#b4b2a9;margin-top:8px;text-align:center">* Stima a ' + (cf.ore_std||8) + 'h/giorno per i giorni mancanti. Nessuna trasferta stimata.</div>';
-    return;
-  }
-
-  // ── MESE FUTURO ──
-  if(meseFuturo) {
-    var impOrdFut = oreRimanenti * (cf.paga || 0);
-    var lordoFut  = impOrdFut;
-    var inpsFut   = lordoFut * ((cf.inps||0)/100);
-    var irpefFut  = (lordoFut - inpsFut) * ((cf.irpef||0)/100);
-    var nettoFut  = lordoFut - inpsFut - irpefFut - addizTot;
-    el.innerHTML =
-      '<div style="background:#e6f1fb;border-radius:10px;padding:14px 16px;margin-bottom:10px">' +
-        '<div style="font-size:11px;font-weight:600;color:#185fa5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Previsione mese futuro</div>' +
-        '<div class="stats" style="margin-bottom:10px">' +
-          '<div class="stat"><div class="stat-l">Giorni lav.</div><div class="stat-v">' + giorniRimanenti + '</div></div>' +
-          '<div class="stat"><div class="stat-l">Ore previste</div><div class="stat-v">' + oreRimanenti.toFixed(0) + 'h</div><div class="stat-s">' + giorniRimanenti + ' × ' + (cf.ore_std||8) + 'h</div></div>' +
-          '<div class="stat"><div class="stat-l">Netto stimato</div><div class="stat-v" style="color:#185fa5">' + nettoFut.toFixed(2) + ' €</div></div>' +
-        '</div>' +
-        '<div style="font-size:11px;color:#5f8ab4">Solo ore ordinarie. Straordinari e trasferte non stimati.' + (addizTot>0 ? ' Addizionali (−' + addizTot.toFixed(2) + ' €) già detratte.' : '') + '</div>' +
-      '</div>';
-    return;
-  }
-
-  // ── MESE CORRENTE ──
-
-  var tetto2 = cf.tetto_trasferte || 40;
-
-  // Ricalcola consuntivo CON tetto fiscale (uguale a calcolaBusta)
-  var impOrdGia2  = oreOrdGia  * (cf.paga      || 0);
-  var impStraGia2 = oreStraGia * (cf.paga_stra || 0);
-  var impAssGia2  = assenzeGia * (cf.paga      || 0);
-  var impPermGia2 = permessiGia* (cf.paga      || 0);
-  var rimGiaTot   = (cP*(cf.rimborso_cliente_pranzo||0))+(cC*(cf.rimborso_cliente_cena||0))+
-                    (nP*(cf.rimborso_nostro_pranzo||0)) +(nC*(cf.rimborso_nostro_cena||0))+
-                    (eP*(cf.rimborso_estero_pranzo||0)) +(eC*(cf.rimborso_estero_cena||0));
-  // Applica tetto fiscale ai giorni già registrati
-  var giorniConTrasfGia = records.filter(function(r){
-    var t=r.trasferte; if(!t) return false;
-    if(typeof t==='number') return t>0;
-    return t.clientePranzo||t.clienteCena||t.nostroPranzo||t.nostroCena||t.esteroPranzo||t.esteroCena;
-  }).length;
-  var esenteGia    = giorniConTrasfGia > 0 ? Math.min(rimGiaTot/giorniConTrasfGia, tetto2)*giorniConTrasfGia : 0;
-  var tassabileGia = Math.max(0, rimGiaTot - esenteGia);
-  var lordoGia     = impOrdGia2 + impStraGia2 + impAssGia2 + impPermGia2 + tassabileGia;
-  var inpsGia      = lordoGia * ((cf.inps||0)/100);
-  var irpefGia     = (lordoGia - inpsGia) * ((cf.irpef||0)/100);
-  var nettoGia     = lordoGia - inpsGia - irpefGia + esenteGia;
-
-  // Stima consuntivo giorni rimanenti CON tetto fiscale
-  var rimStimatiTot = rimStimati; // già calcolato sopra
-  var giorniConTrasfRim = Math.round(
-    (giorniConTrasfGia > 0 ? giorniConTrasfGia/Math.max(giorniGia,1) : 0) * giorniRimanenti
-  );
-  // Le TRASFERTE non si proiettano: nel preventivo contano solo quelle GIA' inserite.
-  // Per i giorni rimanenti si stimano soltanto le ore ordinarie.
-  var esenteRim    = 0;
-  var tassabileRim = 0;
-  var lordoRim2    = impOrdRim + tassabileRim;
-  var inpsRim2     = lordoRim2 * ((cf.inps||0)/100);
-  var irpefRim2    = (lordoRim2 - inpsRim2) * ((cf.irpef||0)/100);
-  var nettoRim2    = lordoRim2 - inpsRim2 - irpefRim2 + esenteRim;
-
-  // TOTALE FINE MESE = consuntivo + stima rimanenti (lordi sommati, poi tassa)
-  var lordoTotBase = (impOrdGia2+impStraGia2+impAssGia2+impPermGia2) + impOrdRim + tassabileGia + tassabileRim;
-  var esenteTot    = esenteGia + esenteRim;
-  var inpsTot      = lordoTotBase * ((cf.inps||0)/100);
-  var irpefTot     = (lordoTotBase - inpsTot) * ((cf.irpef||0)/100);
-  var nettoTot     = lordoTotBase - inpsTot - irpefTot - addizTot + esenteTot;
-  var lordoTot     = lordoTotBase; // lordo tassabile (senza quota esente)
-  var oreTot       = (oreOrdGia + oreStraGia) + oreRimanenti;
-
-  // Spese pasto stimate per giorni rimanenti (media giornaliera)
-  var speseGia    = records.reduce(function(s,r){ return s+(r.spesa_pranzo||0)+(r.spesa_cena||0); }, 0);
-  var mediaSpese  = giorniGia > 0 ? speseGia / giorniGia : 0;
-  var speseRim    = mediaSpese * giorniRimanenti;
-  var speseTotal  = speseGia + speseRim;
-
-  el.innerHTML =
-    // Avviso giallo giorni rimanenti
-    '<div style="background:#fff8e1;border:1.5px solid #f5c842;border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start">' +
-      '<span style="font-size:20px">⚠️</span>' +
-      '<div>' +
-        '<div style="font-weight:600;font-size:13px;color:#7a5700;margin-bottom:4px">Mese in corso — ' + giorniRimanenti + ' giorn' + (giorniRimanenti===1?'o':'i') + ' lavorativ' + (giorniRimanenti===1?'o':'i') + ' rimanent' + (giorniRimanenti===1?'e':'i') + '</div>' +
-        '<div style="font-size:12px;color:#9a7010">Il consuntivo sopra si basa sui ' + giorniGia + ' giorni registrati.<br>Sotto trovi una stima con i ' + giorniRimanenti + ' giorni rimanenti a <b>' + (cf.ore_std||8) + 'h/giorno</b>.</div>' +
-      '</div>' +
-    '</div>' +
-
-    // Blocco A — già inserito (grigio)
-    '<div style="background:#f9f8f5;border-radius:10px;padding:14px 16px;margin-bottom:10px">' +
-      '<div style="font-size:11px;font-weight:600;color:#5f5e5a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Già inserito (' + giorniGia + ' giorni)</div>' +
-      '<div class="stats" style="margin-bottom:0">' +
-        '<div class="stat"><div class="stat-l">Ore inserite</div><div class="stat-v">' + (oreOrdGia+oreStraGia).toFixed(1) + 'h</div></div>' +
-        '<div class="stat"><div class="stat-l">Netto reale</div><div class="stat-v" style="color:#3b6d11">' + nettoGia.toFixed(2) + ' €</div></div>' +
-      '</div>' +
-    '</div>' +
-
-    // Blocco B — giorni rimanenti (giallo tratteggiato)
-    '<div style="background:#fff3cd;border-radius:10px;padding:14px 16px;margin-bottom:10px;border:1px dashed #f5c842">' +
-      '<div style="font-size:11px;font-weight:600;color:#7a5700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">+ Giorni rimanenti stimati (' + giorniRimanenti + ' × ' + (cf.ore_std||8) + 'h)</div>' +
-      '<div class="stats" style="margin-bottom:0">' +
-        '<div class="stat"><div class="stat-l">Ore stimate</div><div class="stat-v">' + oreRimanenti.toFixed(0) + 'h</div></div>' +
-        '<div class="stat"><div class="stat-l">Importo stimato</div><div class="stat-v">' + (oreRimanenti*(cf.paga||0)).toFixed(2) + ' €</div></div>' +
-      '</div>' +
-    '</div>' +
-
-    // Totale finale (scuro)
-    '<div style="background:#1a1a18;border-radius:10px;padding:16px 18px">' +
-      '<div style="font-size:11px;font-weight:600;color:#888780;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Totale mese stimato</div>' +
-      '<div class="res-row" style="border-color:#333"><span style="color:#aaa">Lordo totale</span><span style="color:#f5f4f0"><b>' + lordoTot.toFixed(2) + ' €</b></span></div>' +
-      (esenteTot > 0 ? '<div class="res-row" style="border-color:#333"><span style="color:#81c784">+ Quota esente trasferte</span><span style="color:#81c784">+ ' + esenteTot.toFixed(2) + ' €</span></div>' : '') +
-      '<div class="res-row" style="border-color:#333"><span style="color:#a87">INPS (' + (cf.inps||0) + '%)</span><span style="color:#e09090">− ' + inpsTot.toFixed(2) + ' €</span></div>' +
-      '<div class="res-row" style="border-color:#333"><span style="color:#a87">IRPEF (' + (cf.irpef||0) + '%)</span><span style="color:#e09090">− ' + irpefTot.toFixed(2) + ' €</span></div>' +
-      (addizTot > 0 ? '<div class="res-row" style="border-color:#333"><span style="color:#a87">Addizionali (reg.+com.)</span><span style="color:#e09090">− ' + addizTot.toFixed(2) + ' €</span></div>' : '') +
-      '<div style="border-top:1px solid #444;margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">' +
-        '<span style="color:#f5f4f0;font-weight:600;font-size:14px">Netto stimato a fine mese</span>' +
-        '<span style="color:#f5c842;font-size:20px;font-weight:700">' + nettoTot.toFixed(2) + ' €</span>' +
-      '</div>' +
-    '</div>' +
-    (speseTotal > 0 ?
-      '<div class="res-row" style="margin-top:10px"><span>Spese pasto stimate (pranzo+cena)</span><span style="color:#a32d2d">− ' + speseTotal.toFixed(2) + ' €</span></div>' +
-      '<div style="background:#333;border-radius:10px;padding:14px 16px;margin-top:6px">' +
-        '<div class="res-row" style="border:none"><span style="color:#f5f4f0"><b>Netto − Spese stimate</b></span><span style="color:#f5f4f0"><b>' + (nettoTot - speseTotal).toFixed(2) + ' €</b></span></div>' +
-      '</div>'
-    : '') +
-    '<div style="font-size:11px;color:#b4b2a9;margin-top:10px;text-align:center">* Previsione solo ore ordinarie per i giorni rimanenti</div>';
+  el.innerHTML = preventivoHtml(mese, cf, records, m || motoreBusta(records, cf, mese));
 }
+
 
 // ── IMPOSTAZIONI ──
 function initImpostazioni() {
   var c=cfg();
   document.getElementById('setOreStd').value=c.ore_std;
   var tEl=document.getElementById('setTettoTrasf'); if(tEl) tEl.value=c.tetto_trasferte||40;
+  var mwEl=document.getElementById('setMaggWE'); if(mwEl) mwEl.value=(c.magg_stra_weekend!=null?c.magg_stra_weekend:50);
+  var ofEl=document.getElementById('setOreFisse'); if(ofEl) ofEl.value=c.ordinario_fisso_ore||173;
   document.getElementById('setPaga').value=c.paga;
   document.getElementById('setPagaStra').value=c.paga_stra;
   document.getElementById('setInps').value=c.inps;
@@ -2126,6 +1974,8 @@ function initImpostazioni() {
 function salvaImpostazioni() {
   saveCfg({
     ore_std: parseFloat(document.getElementById('setOreStd').value)||8,
+    ordinario_fisso_ore: parseFloat(document.getElementById('setOreFisse').value)||173,
+    magg_stra_weekend: isNaN(parseFloat(document.getElementById('setMaggWE').value)) ? 50 : parseFloat(document.getElementById('setMaggWE').value),
     paga:    parseFloat(document.getElementById('setPaga').value)||0,
     paga_stra: parseFloat(document.getElementById('setPagaStra').value)||0,
     inps:    parseFloat(document.getElementById('setInps').value)||0,
@@ -2569,6 +2419,12 @@ function aggiornaGrafici() {
   }
 
   var grafBustaEl = document.getElementById('grafBusta');
+  var mG = null;
+  if(isMese) {
+    mG = motoreBusta(records, c, da.slice(0,7));
+    impOrd = mG.impFisso; impStra = mG.impStra; lordo = mG.lordo; inps = mG.inps; irpef = mG.irpef;
+    netto = mG.netto; impStra = mG.impStra + mG.impStraWE; esenteTot = mG.esente; rimTot = mG.totTrasf; spese = mG.spese;
+  }
 
   // PIN check
   if(localStorage.getItem('rl_pin') &&
@@ -2585,7 +2441,7 @@ function aggiornaGrafici() {
   // Consuntivo base (sempre mostrato)
   var htmlBusta =
     '<div class="stats" style="margin-bottom:14px">'+
-      '<div class="stat"><div class="stat-l">Ore ord.</div><div class="stat-v">'+totOrd.toFixed(1)+'h</div><div class="stat-s">'+impOrd.toFixed(2)+' €</div></div>'+
+      (mG ? '<div class="stat"><div class="stat-l">Stip. fisso</div><div class="stat-v">'+mG.oreFisse+'h</div><div class="stat-s">'+(mG.impFisso+mG.impFest).toFixed(2)+' €</div></div>' : '<div class="stat"><div class="stat-l">Ore ord.</div><div class="stat-v">'+totOrd.toFixed(1)+'h</div><div class="stat-s">'+impOrd.toFixed(2)+' €</div></div>')+
       (totStra?'<div class="stat"><div class="stat-l">Straord.</div><div class="stat-v">'+totStra.toFixed(1)+'h</div><div class="stat-s">'+impStra.toFixed(2)+' €</div></div>':'')+
       (rimTot?'<div class="stat"><div class="stat-l">Trasferte</div><div class="stat-v">'+rimTot.toFixed(2)+' €</div></div>':'')+
     '</div>'+
@@ -2598,106 +2454,12 @@ function aggiornaGrafici() {
     (spese?'<div class="res-row" style="margin-top:6px"><span>Spese effettive (pranzo+cena)</span><span style="color:#a32d2d">− '+spese.toFixed(2)+' €</span></div>'+
       '<div class="busta-final"><div class="res-row" style="border:none"><span><b>Netto − Spese</b></span><span><b>'+(netto-spese).toFixed(2)+' €</b></span></div></div>':'');
 
-  // Se periodo = mese intero → aggiungi blocco preventivo coerente
+  // Se periodo = mese intero → stesso blocco preventivo della pagina Busta
   if(isMese){
-    var fineMese = new Date(annoM, meseM+1, 0);
-    var mesePas  = oggi2 > fineMese;
-    var meseCor  = oggi2.getFullYear()===annoM && oggi2.getMonth()===meseM;
-    var meseFut  = annoM>oggi2.getFullYear()||(annoM===oggi2.getFullYear()&&meseM>oggi2.getMonth());
-
-    // Calcola giorni lavorativi totali del mese
-    var totLavM=0, oreStd=c.ore_std||8;
-    var ultimoM=new Date(annoM,meseM+1,0).getDate();
-    var dataOggiS=fmtData(oggi2);
-    var giorniRim=0;
-    for(var gx=1;gx<=ultimoM;gx++){
-      var ds=annoM+'-'+String(meseM+1).padStart(2,'0')+'-'+String(gx).padStart(2,'0');
-      var dw=new Date(annoM,meseM,gx).getDay();
-      if(dw>=1&&dw<=5&&!festG(ds)){
-        totLavM++;
-        if(meseCor&&ds>dataOggiS) giorniRim++;
-        if(meseFut) giorniRim=totLavM;
-      }
-    }
-    if(meseFut) giorniRim=totLavM;
-    var giorniMancanti=Math.max(0,totLavM-giorniGia);
-
     htmlBusta += '<div style="border-top:2px solid #eee;margin-top:16px;padding-top:16px">';
     htmlBusta += '<div style="font-size:12px;font-weight:700;color:#5f5e5a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">📅 Preventivo a fine mese</div>';
-
-    if(mesePas){
-      if(giorniMancanti<=0){
-        htmlBusta+='<div style="text-align:center;padding:12px;color:#3b6d11;font-size:13px;">✅ Mese completato — tutti i giorni inseriti.</div>';
-      } else {
-        var oreManc=giorniMancanti*oreStd;
-        var impManc=oreManc*(c.paga||0);
-        var lordoTotM=lordo+impManc;
-        var inpsTotM=lordoTotM*((c.inps||0)/100);
-        var irpefTotM=(lordoTotM-inpsTotM)*((c.irpef||0)/100);
-        var nettoTotM=lordoTotM-inpsTotM-irpefTotM-addizTotC+esenteTot;
-        htmlBusta+=
-          '<div style="background:#fff8e1;border:1.5px solid #f5c842;border-radius:10px;padding:12px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start">'+
-            '<span style="font-size:18px">⚠️</span>'+
-            '<div style="font-size:12px;color:#7a5700"><b>'+giorniMancanti+' giorn'+(giorniMancanti===1?'o':'i')+' non inserit'+(giorniMancanti===1?'o':'i')+'</b><br>'+
-            'Stima con '+giorniMancanti+'×'+oreStd+'h aggiuntive:</div>'+
-          '</div>'+
-          '<div style="display:flex;gap:10px;margin-bottom:10px">'+
-            '<div class="stat" style="flex:1"><div class="stat-l">Ore mancanti</div><div class="stat-v">'+oreManc.toFixed(0)+'h</div><div class="stat-s">'+impManc.toFixed(2)+' €</div></div>'+
-            '<div class="stat" style="flex:1"><div class="stat-l">Netto stimato</div><div class="stat-v" style="color:#f5c842">'+nettoTotM.toFixed(2)+' €</div></div>'+
-          '</div>';
-      }
-    } else if(meseCor){
-      // Mese corrente: A inserito + B rimanenti
-      var oreRim2=giorniRim*oreStd;
-      var impRim2=oreRim2*(c.paga||0);
-      var lordoRim2=impRim2;
-      var inpsRim2=lordoRim2*((c.inps||0)/100);
-      var irpefRim2=(lordoRim2-inpsRim2)*((c.irpef||0)/100);
-      var nettoRim2=lordoRim2-inpsRim2-irpefRim2;
-      var lordoTot2=lordo+lordoRim2;
-      var inpsTot2=lordoTot2*((c.inps||0)/100);
-      var irpefTot2=(lordoTot2-inpsTot2)*((c.irpef||0)/100);
-      var nettoTot2=lordoTot2-inpsTot2-irpefTot2+esenteTot;
-      htmlBusta+=
-        '<div style="display:flex;gap:8px;font-size:12px;color:#5f5e5a;margin-bottom:12px">'+
-          '<span>Inseriti: <b style="color:#1a1a18">'+giorniGia+'</b></span>'+
-          '<span>·</span>'+
-          '<span>Rimanenti (lun–ven): <b style="color:#185fa5">'+giorniRim+'</b></span>'+
-        '</div>'+
-        '<div style="background:#f9f8f5;border-radius:10px;padding:12px 14px;margin-bottom:8px">'+
-          '<div style="font-size:10px;font-weight:700;color:#5f5e5a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">A · Già inserito ('+giorniGia+' gg)</div>'+
-          '<div style="display:flex;gap:8px">'+
-            '<div class="stat" style="flex:1"><div class="stat-l">Ore inserite</div><div class="stat-v">'+totOrd.toFixed(1)+'h</div></div>'+
-            '<div class="stat" style="flex:1"><div class="stat-l">Netto reale</div><div class="stat-v" style="color:#3b6d11">'+netto.toFixed(2)+' €</div></div>'+
-          '</div>'+
-        '</div>'+
-        '<div style="background:#e6f1fb;border-radius:10px;padding:12px 14px;margin-bottom:8px">'+
-          '<div style="font-size:10px;font-weight:700;color:#185fa5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">B · Previsione ('+giorniRim+' gg × '+oreStd+'h)</div>'+
-          '<div style="display:flex;gap:8px">'+
-            '<div class="stat" style="flex:1"><div class="stat-l">Ore previste</div><div class="stat-v">'+oreRim2.toFixed(0)+'h</div></div>'+
-            '<div class="stat" style="flex:1"><div class="stat-l">Netto stimato</div><div class="stat-v" style="color:#185fa5">'+nettoRim2.toFixed(2)+' €</div></div>'+
-          '</div>'+
-        '</div>'+
-        '<div style="background:#1a1a18;border-radius:10px;padding:14px 16px">'+
-          '<div style="display:flex;justify-content:space-between;align-items:center">'+
-            '<span style="color:#f5f4f0;font-weight:600;font-size:13px">A + B · Netto a fine mese</span>'+
-            '<span style="color:#7ec8e3;font-size:18px;font-weight:700">'+nettoTot2.toFixed(2)+' €</span>'+
-          '</div>'+
-        '</div>';
-    } else if(meseFut){
-      var oreF=giorniRim*oreStd;
-      var lrdF=oreF*(c.paga||0);
-      var nttF=lrdF-lrdF*((c.inps||0)/100)-(lrdF-lrdF*((c.inps||0)/100))*((c.irpef||0)/100);
-      htmlBusta+=
-        '<div style="background:#e6f1fb;border-radius:10px;padding:12px 14px">'+
-          '<div style="display:flex;gap:10px">'+
-            '<div class="stat" style="flex:1"><div class="stat-l">Giorni lav.</div><div class="stat-v">'+giorniRim+'</div></div>'+
-            '<div class="stat" style="flex:1"><div class="stat-l">Ore previste</div><div class="stat-v">'+oreF.toFixed(0)+'h</div></div>'+
-            '<div class="stat" style="flex:1"><div class="stat-l">Netto stimato</div><div class="stat-v" style="color:#185fa5">'+nttF.toFixed(2)+' €</div></div>'+
-          '</div>'+
-        '</div>';
-    }
-    htmlBusta+='</div>';
+    htmlBusta += preventivoHtml(da.slice(0,7), c, records, mG);
+    htmlBusta += '</div>';
   }
 
   grafBustaEl.innerHTML = htmlBusta;
@@ -2822,6 +2584,8 @@ function apriModifica(idx, fromScreen) {
   document.getElementById('mPomA').value      = r.pom_a   || '';
   document.getElementById('mOrd').value       = r.ore_ord  || '';
   document.getElementById('mStra').value      = r.ore_stra || '';
+  // giornata di sabato/festivo salvata con ore ordinarie → ricalcola come straordinario
+  if(giornoNonLavorativo(r.data) && (r.ore_ord||0) > 0) { document.getElementById('mOrd').value = '0.0'; document.getElementById('mStra').value = ((r.ore_ord||0)+(r.ore_stra||0)).toFixed(1); }
   document.getElementById('mSpesaPranzo').value = r.spesa_pranzo || '';
   document.getElementById('mSpesaCena').value   = r.spesa_cena   || '';
   document.getElementById('mKm').value        = r.km       || '';
@@ -2858,10 +2622,12 @@ function autoCalcMod() {
   var prev=document.getElementById('mPrevCalc');
   if(tot>0){
     var std=cfg().ore_std, ord=Math.min(tot,std), stra=Math.max(0,tot-std);
+    var nonLav = giornoNonLavorativo(document.getElementById('mData').value);
+    if(nonLav){ ord=0; stra=tot; }
     document.getElementById('mOrd').value=ord.toFixed(1);
     document.getElementById('mStra').value=stra.toFixed(1);
     prev.style.display='block';
-    prev.textContent='Totale: '+tot.toFixed(1)+'h → Ordinarie: '+ord.toFixed(1)+'h   Straordinarie: '+stra.toFixed(1)+'h';
+    prev.textContent=(nonLav?'Sabato/festivo — ':'')+'Totale: '+tot.toFixed(1)+'h → Ordinarie: '+ord.toFixed(1)+'h   Straordinarie: '+stra.toFixed(1)+'h';
   } else { prev.style.display='none'; }
 }
 
